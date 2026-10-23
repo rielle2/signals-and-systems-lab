@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Beta 测试说明与计算边界
+    url: https://github.com/lml99me/signals-and-systems-lab/blob/main/BETA.md
+    about: 提交前可查看测试说明、冲激约定和有限窗口计算的适用范围。

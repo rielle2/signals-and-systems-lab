@@ -1,0 +1,69 @@
+name: Deploy SignalLab to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - name: Check out the published site repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - name: Read GitHub Pages configuration
+        uses: actions/configure-pages@v6.0.0
+      - name: Prepare only public website files
+        shell: bash
+        run: |
+          set -euo pipefail
+          for entry in index.html css js assets vendor; do
+            test -e "$entry"
+          done
+          if find index.html css js assets vendor -type l -print -quit | grep -q .; then
+            echo 'Symbolic links are not allowed in website files.' >&2
+            exit 1
+          fi
+          if find css js assets vendor -name '.*' -print -quit | grep -q .; then
+            echo 'Hidden files are not allowed inside website resource directories.' >&2
+            exit 1
+          fi
+          mkdir publish
+          cp -- index.html publish/
+          cp -R -- css js assets vendor publish/
+          : > publish/.nojekyll
+      - name: Upload the filtered static site
+        uses: actions/upload-pages-artifact@v5.0.0
+        with:
+          path: publish
+          include-hidden-files: true
+          retention-days: 1
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy the static site
+        id: deployment
+        uses: actions/deploy-pages@v5.0.1
