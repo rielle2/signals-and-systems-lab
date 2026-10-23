@@ -1,0 +1,32 @@
+/* Keep old/new text opaque: reveal the new page, without a whole-page cross-fade. */
+::view-transition { pointer-events: none; }
+::view-transition-group(root),
+::view-transition-group(theme-control) { animation: none; }
+::view-transition-image-pair(root),
+::view-transition-image-pair(theme-control) { isolation: auto; }
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; mix-blend-mode: normal; opacity: 1; }
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2; }
+::view-transition-group(theme-control) { z-index: 3; }
+::view-transition-old(theme-control) { animation: none; opacity: 0; }
+::view-transition-new(theme-control) { animation: none; mix-blend-mode: normal; opacity: 1; }
+
+/* Older engines use a short fade; no DOM clone, scroll lock or simulated circle. */
+.theme-colors-changing :where(body,.sidebar,.topbar,.card,.btn,.badge,input,select,textarea,dialog,.formula-box,.concept-visual,.lab-plot,.signal-editor,.sgp-viewport,.nav-link,.progress,.option,.feedback) {
+  transition-property: background-color, color, border-color, box-shadow;
+  transition-duration: 260ms;
+  transition-timing-function: ease-out;
+}
+.theme-canvas-snapshot {
+  position: fixed;
+  z-index: 29;
+  max-width: none;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 260ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  .theme-colors-changing *, .theme-canvas-snapshot { transition: none !important; }
+}

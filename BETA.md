@@ -1,8 +1,12 @@
-# SignalLab 2.1 Beta 测试说明
+# SignalLab 2.2 Beta 测试说明
 
 [打开网站](https://rielle2.github.io/signals-and-systems-lab/) · [提交反馈](https://github.com/rielle2/signals-and-systems-lab/issues/new?template=bug_report.yml)
 
 这一版重点增加分步学习、客观练习评估与实验室训练：**239道例题、309道固定练习和31个参数化波形练习家族**。它们属于不同用途，不合并成一个夸大的题目总数。
+
+## 本次主题更新
+
+新昼夜开关采用本地SVG海天场景，提供Auto/Light/Dark设置。支持View Transitions的浏览器从开关中心扩散新主题；系统自动变化和减少动态效果不播放全屏扩散，旧浏览器降级为短颜色过渡。欢迎反馈浏览器版本、动画异常、布局或绘图颜色问题，不需要上传学习记录。
 
 ## 先尝试这些学习流程
 

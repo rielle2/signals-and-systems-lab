@@ -289,7 +289,8 @@
   $('#scrim').onclick=closeMenu;
   document.addEventListener('keydown',e=>{if(e.key==='/'&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){e.preventDefault();$('#searchOpen').click();}});
   window.addEventListener('hashchange',()=>{render();window.scrollTo(0,0);});
+  window.ThemeSwitch?.mount();
   persist();render();
   // Expose read-only snapshots for reproducible offline QA, never used as application state.
-  window.SignalLab={getState:()=>JSON.parse(JSON.stringify(store)),counts:()=>({topics:topics.length,questions:questionBank.length,chapters:chapters.length}),getAssessmentStats:id=>id?A.topicStats(store.assessment,id):A.stats(store.assessment),getQuestionCatalog:()=>questionBank.map(q=>({...q})),contentCounts:()=>({examples:45+Object.values(window.WORKED_EXAMPLES?.byTopic||{}).reduce((n,a)=>n+a.length,0)+Object.values(window.WORKED_EXAMPLES?.byChapter||{}).reduce((n,a)=>n+a.length,0),labFamilies:familyCatalog.length,objectiveQuestions:questionBank.filter(A.isObjective).length}),version:'2.1.0-beta.2'};
+  window.SignalLab={getState:()=>JSON.parse(JSON.stringify(store)),counts:()=>({topics:topics.length,questions:questionBank.length,chapters:chapters.length}),getAssessmentStats:id=>id?A.topicStats(store.assessment,id):A.stats(store.assessment),getQuestionCatalog:()=>questionBank.map(q=>({...q})),contentCounts:()=>({examples:45+Object.values(window.WORKED_EXAMPLES?.byTopic||{}).reduce((n,a)=>n+a.length,0)+Object.values(window.WORKED_EXAMPLES?.byChapter||{}).reduce((n,a)=>n+a.length,0),labFamilies:familyCatalog.length,objectiveQuestions:questionBank.filter(A.isObjective).length}),version:'2.2.0-beta.1'};
 })();

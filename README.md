@@ -1,8 +1,12 @@
-# SignalLab 2.1 Beta · 信号与系统交互学习
+# SignalLab 2.2 Beta · 信号与系统交互学习
 
 以奥本海姆《信号与系统》第二版的知识体系为参考，用原创中文讲解、逐步例题、波形实验和练习评估帮助本科生理解与复习。学习不需要登录或付费；本项目并非教材全文或官方配套产品。
 
 [打开学习网站](https://rielle2.github.io/signals-and-systems-lab/) · [反馈问题 / 数学纠错](https://github.com/rielle2/signals-and-systems-lab/issues/new?template=bug_report.yml) · [Beta 测试说明](BETA.md)
+
+## 昼夜主题
+
+顶部海天胶囊开关在浅色/深色间切换；旁边设置入口提供“跟随系统 / 始终浅色 / 始终深色”。首次默认跟随系统，手动选择后保存。支持的浏览器从开关中心播放圆形扩散；减少动态效果时直接切换，旧浏览器使用短暂颜色过渡。切换不重置输入、实验参数或答题进度。
 
 ## 这版可以学什么
 
