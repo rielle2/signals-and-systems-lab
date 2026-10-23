@@ -1,6 +1,6 @@
 # SignalLab 2.1 Beta 测试说明
 
-[打开网站](https://lml99me.github.io/signals-and-systems-lab/) · [提交反馈](https://github.com/lml99me/signals-and-systems-lab/issues/new?template=bug_report.yml)
+[打开网站](https://rielle2.github.io/signals-and-systems-lab/) · [提交反馈](https://github.com/rielle2/signals-and-systems-lab/issues/new?template=bug_report.yml)
 
 这一版重点增加分步学习、客观练习评估与实验室训练：**239道例题、309道固定练习和31个参数化波形练习家族**。它们属于不同用途，不合并成一个夸大的题目总数。
 
@@ -50,3 +50,7 @@
 反馈请附页面、操作步骤、可公开的表达式和参数、期望与实际结果、设备及浏览器版本。数学纠错尽量附推导或公开参考，注明CT/DT、变换约定及ROC。
 
 GitHub反馈是公开的。只提交复现所需内容，不上传学习记录备份、密码、令牌、个人文件或他人资料。网站反馈按钮只准备并打开表单，最终内容由提交者审核后提交。
+
+## 原网址的学习记录
+
+GitHub 账号已更名，当前规范地址见本页顶部的“打开网站”。旧的 `lml99me.github.io` 地址已返回404，请分享新网址。浏览器会把不同域名的学习数据隔离；版本升级支持旧JSON格式，但不能自动跨域读取原网址记录。有备份时，请在新站“项目说明 → 数据备份与恢复”中合并导入。原浏览器数据不会因发布网站文件而被删除。

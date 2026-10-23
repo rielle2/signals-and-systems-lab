@@ -1,7 +1,7 @@
 /* Public Beta metadata. The release preparer injects only the public repo URL. */
 (function(){
   'use strict';
-  const repository='https://github.com/lml99me/signals-and-systems-lab';
+  const repository='https://github.com/rielle2/signals-and-systems-lab';
   const configured=/^https:\/\/github\.com\/[a-zA-Z0-9-]+\/[a-zA-Z0-9_.-]+$/.test(repository);
   const version='2.1.0-beta.2';
   const issueURL=configured?repository+'/issues/new?template=bug_report.yml&title=%5BBeta%5D%20':'';

@@ -2,7 +2,7 @@
 
 以奥本海姆《信号与系统》第二版的知识体系为参考，用原创中文讲解、逐步例题、波形实验和练习评估帮助本科生理解与复习。学习不需要登录或付费；本项目并非教材全文或官方配套产品。
 
-[打开学习网站](https://lml99me.github.io/signals-and-systems-lab/) · [反馈问题 / 数学纠错](https://github.com/lml99me/signals-and-systems-lab/issues/new?template=bug_report.yml) · [Beta 测试说明](BETA.md)
+[打开学习网站](https://rielle2.github.io/signals-and-systems-lab/) · [反馈问题 / 数学纠错](https://github.com/rielle2/signals-and-systems-lab/issues/new?template=bug_report.yml) · [Beta 测试说明](BETA.md)
 
 ## 这版可以学什么
 
