@@ -15,7 +15,7 @@
 /* Older engines use a short fade; no DOM clone, scroll lock or simulated circle. */
 .theme-colors-changing :where(body,.sidebar,.topbar,.card,.btn,.badge,input,select,textarea,dialog,.formula-box,.concept-visual,.lab-plot,.signal-editor,.sgp-viewport,.nav-link,.progress,.option,.feedback) {
   transition-property: background-color, color, border-color, box-shadow;
-  transition-duration: 260ms;
+  transition-duration: 200ms;
   transition-timing-function: ease-out;
 }
 .theme-canvas-snapshot {
@@ -24,8 +24,14 @@
   max-width: none;
   pointer-events: none;
   opacity: 1;
-  transition: opacity 260ms ease-out;
+  transition: opacity 200ms ease-out;
 }
+/* The full profile keeps its original scene timings and shadows. */
+:root[data-theme-animation-level="2"] { --theme-scene-duration: 520ms; --theme-scene-fade: 400ms; }
+:root[data-theme-animation-level="3"] { --theme-scene-duration: 280ms; --theme-scene-fade: 220ms; }
+:root[data-theme-animation-level="2"] .theme-control #themeToggle { box-shadow: inset 0 1px 2px rgb(15 64 106 / .12); }
+:root[data-theme-animation-level="2"] .theme-control .theme-orb { box-shadow: 0 0 0 1px rgb(255 255 255 / .6); }
+:root[data-theme-animation-level="2"] dialog::backdrop { backdrop-filter: none; }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
   .theme-colors-changing *, .theme-canvas-snapshot { transition: none !important; }

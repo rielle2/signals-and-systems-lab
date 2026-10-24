@@ -1,8 +1,12 @@
-# SignalLab 2.2 Beta · 信号与系统交互学习
+# SignalLab 2.2.1 Beta · 信号与系统交互学习
 
 以奥本海姆《信号与系统》第二版的知识体系为参考，用原创中文讲解、逐步例题、波形实验和练习评估帮助本科生理解与复习。学习不需要登录或付费；本项目并非教材全文或官方配套产品。
 
 [打开学习网站](https://rielle2.github.io/signals-and-systems-lab/) · [反馈问题 / 数学纠错](https://github.com/rielle2/signals-and-systems-lab/issues/new?template=bug_report.yml) · [Beta 测试说明](BETA.md)
+
+## 移动动画效果
+
+主题设置箭头中展开“动画效果”，可选自动、完整、移动优化、轻量。自动未知设备保留原680ms圆形；根据本会话连续实测才调整。移动优化仍保留圆形和日月海景，使用520ms；API缺失与减少动态效果优先采用轻量切换。顶部建议色、可视视口和图表改色已优化，网站不控制浏览器原生系统栏动画。
 
 ## 昼夜主题
 
