@@ -66,7 +66,7 @@
     if(options.persist!==false)try{localStorage.setItem(KEY,preference);}catch{/* Current session remains effective. */}
     document.dispatchEvent(new CustomEvent('signallab:themepreference',{detail:{preference,theme:resolved(),animate:animate&&changed,reducedMotion:reduced()}}));
     cancel();
-    if(!changed||!animate||(next.level===3&&next.reason==='repeated-observed-delay')){
+    if(!changed||!animate||next.immediate||(next.level===3&&next.reason==='repeated-observed-delay')){
       state={active:false,method:'none',sequence:token,origin:null,radius:0,...next};apply();return;
     }
     const shape=engine.geometry(options.origin);
@@ -78,7 +78,7 @@
         if(token!==sequence)return;meter.updateStart();apply({deferToolbar:true});meter.updateEnd();
       });
       const run={view,animation:null,meter,shape};current=run;
-      const recover=()=>{if(token!==sequence||!state.active)return;view.skipTransition?.();apply();finish(token,false);};
+      const recover=()=>{if(token!==sequence||!state.active)return;view.skipTransition?.();state={...state,method:'none',reason:'capture-failed'};apply();finish(token,false);};
       view.updateCallbackDone?.catch(recover);
       view.ready.then(()=>{
         if(token!==sequence)return;
@@ -125,9 +125,9 @@
   window.addEventListener('hashchange',interrupt);
   window.addEventListener('scroll',()=>{if(!state.active)return;const v=current?.shape?.viewport||state.viewport;if(state.method==='fallback'||!v||Math.abs(scrollY-v.scrollY)>2||Math.abs(scrollX-v.scrollX)>2)interrupt();},{passive:true});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)interrupt();});
-  window.SignalTheme=Object.freeze({setPreference,toggle,getPreference:()=>preference,getTheme:resolved,isReducedMotion:reduced,refresh,storageKey:KEY,
+  window.SignalTheme=Object.freeze({version:'2.2.2-beta.1',setPreference,toggle,getPreference:()=>preference,getTheme:resolved,isReducedMotion:reduced,refresh,storageKey:KEY,
     getAnimationPreference:engine.getPreference,setAnimationPreference:engine.setPreference,getAnimationPolicy:engine.policy,getPerformanceSamples:engine.getSamples,
-    getTransitionState:()=>({...state,origin:state.origin?{...state.origin}:null,viewport:state.viewport?{...state.viewport}:null,duration:state.duration||engine.policy().duration})});
+    getTransitionState:()=>({...state,origin:state.origin?{...state.origin}:null,viewport:state.viewport?{...state.viewport}:null,duration:state.duration??engine.policy().duration})});
   document.addEventListener('signallab:animationpreference',()=>{interrupt();refresh();});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refresh,{once:true});else refresh();
 })();

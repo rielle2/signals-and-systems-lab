@@ -293,5 +293,5 @@
   window.ThemeSwitch?.mount();
   persist();render();
   // Expose read-only snapshots for reproducible offline QA, never used as application state.
-  window.SignalLab={getState:()=>JSON.parse(JSON.stringify(store)),counts:()=>({topics:topics.length,questions:questionBank.length,chapters:chapters.length}),getAssessmentStats:id=>id?A.topicStats(store.assessment,id):A.stats(store.assessment),getQuestionCatalog:()=>questionBank.map(q=>({...q})),contentCounts:()=>({examples:45+Object.values(window.WORKED_EXAMPLES?.byTopic||{}).reduce((n,a)=>n+a.length,0)+Object.values(window.WORKED_EXAMPLES?.byChapter||{}).reduce((n,a)=>n+a.length,0),labFamilies:familyCatalog.length,objectiveQuestions:questionBank.filter(A.isObjective).length}),version:'2.2.1-beta.1'};
+  window.SignalLab={getState:()=>JSON.parse(JSON.stringify(store)),counts:()=>({topics:topics.length,questions:questionBank.length,chapters:chapters.length}),getAssessmentStats:id=>id?A.topicStats(store.assessment,id):A.stats(store.assessment),getQuestionCatalog:()=>questionBank.map(q=>({...q})),contentCounts:()=>({examples:45+Object.values(window.WORKED_EXAMPLES?.byTopic||{}).reduce((n,a)=>n+a.length,0)+Object.values(window.WORKED_EXAMPLES?.byChapter||{}).reduce((n,a)=>n+a.length,0),labFamilies:familyCatalog.length,objectiveQuestions:questionBank.filter(A.isObjective).length}),version:'2.2.2-beta.1'};
 })();

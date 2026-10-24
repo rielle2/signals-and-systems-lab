@@ -3,9 +3,9 @@
  */
 (function(){
   'use strict';
-  const root=document.documentElement,KEY='signallab.theme.animation.v1';
+  const root=document.documentElement,KEY='signallab.theme.animation.v1',VERSION='2.2.2-beta.1';
   const motion=window.matchMedia?.('(prefers-reduced-motion: reduce)');
-  const valid=value=>['auto','full','optimized','simple'].includes(value);
+  const valid=value=>['auto','full','optimized','simple','off'].includes(value);
   let preference='auto',automaticLevel=1,samples=[],refreshInterval=1000/60,capabilityCache;
   try{const saved=localStorage.getItem(KEY);if(valid(saved))preference=saved;}catch{/* Session preference remains available. */}
   const profiles={
@@ -29,12 +29,14 @@
     let level=preference==='auto'?automaticLevel:preference==='full'?1:preference==='optimized'?2:3;
     let reason=preference==='auto'?(automaticLevel===1?'unmeasured-or-within-budget':'repeated-observed-delay'):'user-choice';
     const unavailable=capability();
+    if(preference==='off')return {...profiles[3],profile:'none',duration:0,preference,reason:'user-choice',immediate:true};
     if(motion?.matches){level=3;reason='reduced-motion';}
     else if(unavailable){level=3;reason=unavailable;}
     return {...profiles[level],preference,reason};
   }
   function publish(){
     const next=policy();root.dataset.themeAnimationLevel=String(next.level);
+    root.dataset.themeMotion=next.immediate||next.reason==='reduced-motion'?'none':'animated';
     document.dispatchEvent(new CustomEvent('signallab:animationpolicy',{detail:next}));return next;
   }
   function setPreference(value){
@@ -129,8 +131,25 @@
       if(gaps.length<24)requestAnimationFrame(step);else{const clean=gaps.filter(x=>x>=4&&x<=50);if(clean.length>=12)refreshInterval=Math.max(1000/60,percentile(clean,.5));}}
     requestAnimationFrame(step);
   }
+  async function getDiagnostics(){
+    const css=getComputedStyle(root),value=name=>css.getPropertyValue(name).trim().replace(/^["']|["']$/g,'')||null;
+    const site=document.querySelector('meta[name="signallab-release"]')?.content||window.SignalLabBeta?.version||null;
+    const assets={themeAnimation:VERSION,theme:window.SignalTheme?.version||null,themeSwitch:window.ThemeSwitch?.version||null,
+      themeCSS:value('--theme-transition-version'),sceneCSS:value('--theme-scene-version')};
+    const values=[site,...Object.values(assets)];
+    let registrations='unsupported',cacheCount='unsupported';
+    try{if(navigator.serviceWorker?.getRegistrations)registrations=(await navigator.serviceWorker.getRegistrations()).length;}catch{registrations='unavailable';}
+    try{if(window.caches?.keys)cacheCount=(await window.caches.keys()).length;}catch{cacheCount='unavailable';}
+    return {version:{site,assets,consistent:values.every(v=>v===VERSION)},userAgent:navigator.userAgent,
+      capabilities:{viewTransition:typeof document.startViewTransition==='function',clipPath:!!window.CSS?.supports?.('clip-path','circle(1px at 1px 1px)'),
+        webAnimations:typeof root.animate==='function',pseudoAnimation:capability()===null,visualViewport:!!window.visualViewport,
+        reducedMotion:!!motion?.matches,longTasks:!!window.PerformanceObserver?.supportedEntryTypes?.includes('longtask')},preference,policy:policy(),lastTransition:window.SignalTheme?.getTransitionState?.()||null,
+      samples:samples.map(s=>({...s})),cache:{serviceWorkerControlled:!!navigator.serviceWorker?.controller,registrations,cacheCount},
+      measurement:'Main-thread rAF and Long Tasks proxies only; not GPU measurements or physical-device FPS. No study data is collected.'};
+  }
   root.dataset.themeAnimationLevel=String(policy().level);
+  root.dataset.themeMotion=policy().immediate||motion?.matches?'none':'animated';
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',calibrate,{once:true});else calibrate();
-  window.ThemeAnimation=Object.freeze({getPreference:()=>preference,setPreference,policy,publish,geometry,snapshotGeometry,toolbarDelay,viewport,measure,
+  window.ThemeAnimation=Object.freeze({version:VERSION,getPreference:()=>preference,setPreference,policy,publish,geometry,snapshotGeometry,toolbarDelay,viewport,measure,getDiagnostics,
     getSamples:()=>samples.map(s=>({...s})),evaluateHistory:nextLevel,storageKey:KEY});
 })();
