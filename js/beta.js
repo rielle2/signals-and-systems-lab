@@ -3,7 +3,7 @@
   'use strict';
   const repository='https://github.com/rielle2/signals-and-systems-lab';
   const configured=/^https:\/\/github\.com\/[a-zA-Z0-9-]+\/[a-zA-Z0-9_.-]+$/.test(repository);
-  const version='2.2.2-beta.1';
+  const version='3.0.0-beta.1';
   const issueURL=configured?repository+'/issues/new?template=bug_report.yml&title=%5BBeta%5D%20':'';
   const header=document.querySelector('.topbar-actions');
   if(!header)return;
@@ -17,7 +17,7 @@
   const link=dialog.querySelector('[data-beta-issue]');
   if(configured)link.href=issueURL;
   else{link.hidden=true;dialog.querySelector('[data-beta-config-note]').textContent='当前是待发布的本地副本，GitHub 反馈入口会在准备发布副本时配置。';}
-  const route=()=>/^#(?:home|chapter|lesson|labs|exercises|question|formulas|review|bookmarks|map|about|signal-guide)(?:[\/a-zA-Z0-9_-]*)$/.test(location.hash.split('?')[0])?location.hash.split('?')[0]:'#home';
+  const route=()=>/^#(?:home|chapter|lesson|labs|exercises|question|formulas|review|bookmarks|map|about|signal-guide|photo-waveforms)(?:[\/a-zA-Z0-9_-]*)$/.test(location.hash.split('?')[0])?location.hash.split('?')[0]:'#home';
   feedback.addEventListener('click',()=>{dialog.querySelector('[data-beta-route]').textContent=route();dialog.querySelector('[data-beta-copy-status]').textContent='';dialog.showModal();});
   dialog.querySelector('[data-beta-close]').addEventListener('click',()=>dialog.close());
   dialog.addEventListener('click',event=>{if(event.target===dialog){const box=dialog.getBoundingClientRect();if(event.clientX<box.left||event.clientX>box.right||event.clientY<box.top||event.clientY>box.bottom)dialog.close();}});

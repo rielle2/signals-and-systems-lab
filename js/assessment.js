@@ -17,6 +17,11 @@
   }
   function grade(q,value){
     if(!isObjective(q))return {gradable:false,valid:true,correct:null,message:'此题需要人工核对，不计入客观正确率。'};
+    if(q.type==='waveform'){
+      if(!global.WaveformMath||value?.confirmed!==true||value?.reviewed!==true)return {gradable:false,valid:false,correct:null,status:'uncertain',message:'请先校准并确认数字波形；未确认的图像识别不计分。'};
+      if(value.source==='photo'&&!['candidate','corrected'].includes(value.recognition))return {gradable:false,valid:false,correct:null,status:'uncertain',message:'照片识别尚未可靠确认或修正，本次不计分。'};
+      return global.WaveformMath.grade(q,value.model,{confirmed:true});
+    }
     if(q.type==='numeric'){
       let parsed;try{parsed=number(value);}catch(error){return {gradable:true,valid:false,correct:false,message:error.message};}
       const expected=Number(q.answer),a=q.grading?.absTol??1e-7,r=q.grading?.relTol??1e-6;

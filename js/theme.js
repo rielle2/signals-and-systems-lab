@@ -32,12 +32,12 @@
   }
   function cancel(){
     const previous=current;current=null;
-    previous?.meter?.stop({complete:false});previous?.animation?.cancel();previous?.view?.skipTransition?.();
+    previous?.animation?.cancel();previous?.view?.skipTransition?.();
     clearVisuals();state={...state,active:false,sequence};
   }
-  function finish(token,complete=true){
+  function finish(token){
     if(token!==sequence||!state.active)return;
-    current?.meter?.stop({complete});current?.animation?.cancel();current=null;
+    current?.animation?.cancel();current=null;
     toolbar();clearVisuals();state={...state,active:false};
     document.dispatchEvent(new CustomEvent('signallab:themesettled',{detail:{theme:resolved(),preference,method:state.method}}));
   }
@@ -55,30 +55,29 @@
   }
   function fallback(token,shape,next){
     snapshotCanvases();root.classList.add('theme-colors-changing');root.dataset.themeTransition='fallback';
-    state={active:true,method:'fallback',sequence:token,...shape,...next};apply();
+    state={active:true,sequence:token,...shape,...next,method:'fallback'};apply();
     requestAnimationFrame(()=>requestAnimationFrame(()=>{if(token===sequence)overlays.forEach(node=>{node.style.opacity='0';});}));
     timer=setTimeout(()=>finish(token),next.duration+70);
   }
   function setPreference(value,options={}){
     if(!valid(value))return;
-    preference=value;const token=++sequence,next=engine.publish(),changed=root.dataset.theme!==resolved();
+    preference=value;const token=++sequence,next=engine.policy(),changed=root.dataset.theme!==resolved();
     const animate=options.animate!==false&&!reduced()&&!!document.body;
     if(options.persist!==false)try{localStorage.setItem(KEY,preference);}catch{/* Current session remains effective. */}
     document.dispatchEvent(new CustomEvent('signallab:themepreference',{detail:{preference,theme:resolved(),animate:animate&&changed,reducedMotion:reduced()}}));
     cancel();
-    if(!changed||!animate||next.immediate||(next.level===3&&next.reason==='repeated-observed-delay')){
-      state={active:false,method:'none',sequence:token,origin:null,radius:0,...next};apply();return;
+    if(!changed||!animate||next.immediate){
+      state={...next,active:false,method:'none',duration:0,sequence:token,origin:null,radius:0};apply();return;
     }
     const shape=engine.geometry(options.origin);
-    if(next.level===3){fallback(token,shape,next);return;}
-    state={active:true,method:'native',sequence:token,...shape,...next};root.dataset.themeTransition='native';
-    const meter=engine.measure(next);
+    if(next.method==='fallback'){fallback(token,shape,next);return;}
+    state={active:true,sequence:token,...shape,...next,method:'native'};root.dataset.themeTransition='native';
     try{
       const view=document.startViewTransition(()=>{
-        if(token!==sequence)return;meter.updateStart();apply({deferToolbar:true});meter.updateEnd();
+        if(token!==sequence)return;apply({deferToolbar:true});
       });
-      const run={view,animation:null,meter,shape};current=run;
-      const recover=()=>{if(token!==sequence||!state.active)return;view.skipTransition?.();state={...state,method:'none',reason:'capture-failed'};apply();finish(token,false);};
+      const run={view,animation:null,shape};current=run;
+      const recover=()=>{if(token!==sequence||!state.active)return;view.skipTransition?.();state={...state,method:'none',reason:'capture-failed'};apply();finish(token);};
       view.updateCallbackDone?.catch(recover);
       view.ready.then(()=>{
         if(token!==sequence)return;
@@ -88,7 +87,7 @@
           run.animation=root.animate({clipPath:[`circle(0px at ${x}px ${y}px)`,`circle(${mapped.radius}px at ${x}px ${y}px)`]},
             {duration:next.duration,easing:next.easing,pseudoElement:'::view-transition-new(root)',fill:'both'});
           if(run.animation.effect?.pseudoElement!=='::view-transition-new(root)'){recover();return;}
-          run.animation.finished.then(()=>{},()=>{});meter.ready(run.animation);
+          run.animation.finished.then(()=>{},()=>{});
           const delay=engine.toolbarDelay(mapped,next);state.toolbarDelay=delay;
           // WAAPI's start time may resolve a frame after ready. Wall-clock time
           // alone can tint browser chrome before the circle reaches the top.
@@ -102,7 +101,7 @@
         }catch{recover();}
       },recover);
       view.finished.then(()=>finish(token),recover);timer=setTimeout(recover,next.duration+1200);
-    }catch{meter.stop({complete:false});fallback(token,shape,{...next,level:3,profile:'simple',duration:220,reason:'capture-failed'});}
+    }catch{fallback(token,shape,{...next,method:'fallback',profile:'fallback',duration:220,reason:'capture-failed'});}
   }
   function toggle(options={}){setPreference(resolved()==='dark'?'light':'dark',options);}
   function interrupt(){if(!state.active)return;++sequence;cancel();apply();}
@@ -115,7 +114,7 @@
   }
   const follow=()=>{if(preference==='system')setPreference('system',{animate:false,persist:false});};
   const listen=(query,fn)=>{if(query?.addEventListener)query.addEventListener('change',fn);else query?.addListener?.(fn);};
-  listen(system,follow);listen(motion,()=>{engine.publish();if(reduced())interrupt();});
+  listen(system,follow);listen(motion,()=>{if(reduced())interrupt();});
   window.addEventListener('storage',event=>{
     if(event.key===KEY&&(valid(event.newValue)||event.newValue===null))setPreference(event.newValue||'system',{animate:false,persist:false});
   });
@@ -125,9 +124,7 @@
   window.addEventListener('hashchange',interrupt);
   window.addEventListener('scroll',()=>{if(!state.active)return;const v=current?.shape?.viewport||state.viewport;if(state.method==='fallback'||!v||Math.abs(scrollY-v.scrollY)>2||Math.abs(scrollX-v.scrollX)>2)interrupt();},{passive:true});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)interrupt();});
-  window.SignalTheme=Object.freeze({version:'2.2.2-beta.1',setPreference,toggle,getPreference:()=>preference,getTheme:resolved,isReducedMotion:reduced,refresh,storageKey:KEY,
-    getAnimationPreference:engine.getPreference,setAnimationPreference:engine.setPreference,getAnimationPolicy:engine.policy,getPerformanceSamples:engine.getSamples,
+  window.SignalTheme=Object.freeze({version:'3.0.0-beta.1',setPreference,toggle,getPreference:()=>preference,getTheme:resolved,isReducedMotion:reduced,refresh,storageKey:KEY,
     getTransitionState:()=>({...state,origin:state.origin?{...state.origin}:null,viewport:state.viewport?{...state.viewport}:null,duration:state.duration??engine.policy().duration})});
-  document.addEventListener('signallab:animationpreference',()=>{interrupt();refresh();});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',refresh,{once:true});else refresh();
 })();
