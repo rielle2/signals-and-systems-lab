@@ -1,8 +1,12 @@
-# SignalLab 3.0.0 Beta 测试说明
+# SignalLab 3.1.0 Beta 测试说明
 
 [打开网站](https://rielle2.github.io/signals-and-systems-lab/) · [提交反馈](https://github.com/rielle2/signals-and-systems-lab/issues/new?template=bug_report.yml)
 
 这一版新增19道本地拍照／关键点绘图题，保留分步学习、客观练习评估与实验室训练：**239道例题、328道固定练习和31个参数化波形练习家族**。它们属于不同用途，不合并成一个夸大的题目总数。
+
+## 图标交互
+
+3.1版只为菜单、播放、展开、收藏等状态控件添加Morphicons变形，其他图标保持静态。图标不改变评分、学习记录或数学模型；海景主题开关继续使用原设计。照片与答题输入在收藏时保留。开启系统减少动态效果会直接更新图标；不支持动画时仍能完成操作。本地图标包与MIT许可随网站提供，不访问第三方图标CDN。
 
 ## 拍照绘图练习：使用流程与边界
 

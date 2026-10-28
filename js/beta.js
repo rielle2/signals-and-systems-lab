@@ -3,7 +3,7 @@
   'use strict';
   const repository='https://github.com/rielle2/signals-and-systems-lab';
   const configured=/^https:\/\/github\.com\/[a-zA-Z0-9-]+\/[a-zA-Z0-9_.-]+$/.test(repository);
-  const version='3.0.0-beta.1';
+  const version='3.1.0-beta.1';
   const issueURL=configured?repository+'/issues/new?template=bug_report.yml&title=%5BBeta%5D%20':'';
   const header=document.querySelector('.topbar-actions');
   if(!header)return;
@@ -27,5 +27,6 @@
     try{await navigator.clipboard.writeText(text);status.textContent='已复制。请检查内容后，再决定是否粘贴到公开反馈中。';}
     catch{status.textContent=text;status.style.whiteSpace='pre-wrap';}
   });
+  window.SignalIcons?.enhance(dialog);window.SignalIcons?.enhance(header);
   window.SignalLabBeta=Object.freeze({version,repository:configured?repository:null,issueURL:issueURL||null});
 })();

@@ -1,0 +1,16 @@
+{
+  "name": "morphicons",
+  "version": "2.0.2",
+  "entry": "morphicons/dom",
+  "format": "classic IIFE",
+  "target": "ES2020",
+  "license": "MIT",
+  "source": "https://github.com/guillermolg00/morphicons/tree/v2.0.2",
+  "bytes": 34477,
+  "gzipBytes": 14906,
+  "sha256": "bb64ae690fa8b94379fff63c9803bbbace9ee06ba37e614cbfb40289a2203ce0",
+  "runtimeDependencies": [],
+  "networkChunks": 0,
+  "iconFrameBudgetHz": 60,
+  "scope": "Morphicons bundle only; global requestAnimationFrame unchanged"
+}

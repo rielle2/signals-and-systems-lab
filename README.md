@@ -1,8 +1,12 @@
-# SignalLab 3.0.0 Beta · 信号与系统交互学习
+# SignalLab 3.1.0 Beta · 信号与系统交互学习
 
 以奥本海姆《信号与系统》第二版的知识体系为参考，用原创中文讲解、逐步例题、波形实验和练习评估帮助本科生理解与复习。学习不需要登录或付费；本项目并非教材全文或官方配套产品。
 
 [打开学习网站](https://rielle2.github.io/signals-and-systems-lab/) · [反馈问题 / 数学纠错](https://github.com/rielle2/signals-and-systems-lab/issues/new?template=bug_report.yml) · [Beta 测试说明](BETA.md)
+
+## 图标与操作反馈
+
+菜单、播放、展开和收藏使用轻量SVG变形反馈；普通工具与照片操作统一为线性图标。收藏保留当前照片和作答草稿，触摸控件扩大点击区域。原海天昼夜按钮和圆形扩散保持，减少动态效果时图标直接更新。Morphicons2.0.2以MIT许可证随站点本地分发，不依赖运行时CDN或React；无需安装即可访问/离线打开。真实手机兼容性与性能仍需实际设备验证，桌面模拟不能代替真机测试。
 
 ## 新增拍照与关键点绘图练习
 

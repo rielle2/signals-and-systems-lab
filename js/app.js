@@ -42,19 +42,7 @@
     $$('[data-latex]',root).forEach(el=>{try{window.katex.render(el.dataset.latex,el,{displayMode:true,throwOnError:true,strict:'ignore',trust:false});}catch(e){el.textContent=el.dataset.latex;el.classList.add('math-error');console.error('Formula error',el.dataset.latex,e.message);}});
     if(window.renderMathInElement) window.renderMathInElement(root,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}],throwOnError:false,strict:'ignore',trust:false});
   };
-  const icons = {
-    home:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
-    lab:'<path d="M9 3h6M10 3v7L4 19q-1 2 2 2h12q3 0 2-2l-6-9V3M8 15h8"/>',
-    exercise:'<rect x="5" y="4" width="15" height="17" rx="2"/><path d="M9 2v4h7V2M9 11h7M9 15h7"/>',
-    review:'<path d="M4 8a9 9 0 1 1-1 7M4 3v5h5M12 7v5l3 2"/>',
-    formula:'<path d="M18 3H9l-4 9 4 9h9M7 12h10"/>',
-    map:'<rect x="9" y="2" width="6" height="5" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/><path d="M12 7v5H5v5M12 12h7v5"/>',
-    bookmark:'<path d="M6 3h12v18l-6-4-6 4z"/>',
-    check:'<path d="m5 12 4 4L19 6"/>',
-    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>',
-    wrong:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="m9 9 6 6m0-6-6 6"/>'
-  };
-  const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[name]||icons.lab}</svg>`;
+  const icon = name => window.SignalIcons.svg(name);
   const labInfo = [
     {id:'transform',name:'信号变换',en:'Signal transformations',symbol:'↔',text:'拖动时间轴，理解平移、反转与尺度变化。'},
     {id:'systems',name:'系统性质',en:'System properties',symbol:'⇄',text:'沿两条路径检验时不变性，分清系统的六种性质。'},
@@ -71,7 +59,7 @@
   }
   function renderSidebar(route) {
     const top = route[0]||'home';
-    const links=[['home','学习概览','home'],['labs','交互实验室','lab'],['exercises','习题中心','exercise'],['photo-waveforms','拍照绘图练习','exercise'],['review','复习计划','review'],['formulas','公式速查','formula'],['map','知识结构','map'],['bookmarks','我的收藏','bookmark']];
+    const links=[['home','学习概览','home'],['labs','交互实验室','lab'],['exercises','习题中心','exercise'],['photo-waveforms','拍照绘图练习','photo'],['review','复习计划','review'],['formulas','公式速查','formula'],['map','知识结构','map'],['bookmarks','我的收藏','bookmark']];
     $('#sidebar').innerHTML=`<a class="brand" href="#home"><img class="brand-logo" src="assets/favicon.svg" alt=""><div><strong>SignalLab<span style="color:var(--blue)">.</span></strong><small>信号与系统 · 交互学习</small></div></a><div class="nav-label">LEARNING SPACE</div><nav>${links.map(([id,title,ico])=>`<a class="nav-link ${top===id?'active':''}" href="#${id}">${icon(ico)}${title}${id==='labs'?'<span class="nav-count">06</span>':id==='review'&&wrongCount()?`<span class="nav-count">${wrongCount()}</span>`:''}</a>`).join('')}</nav><div class="nav-label">COURSE CHAPTERS</div><nav aria-label="课程章节">${chapters.map((c,i)=>`<details class="chapter-nav" ${route[1]===c.id?'open':''}><summary><span class="chapter-num">${String(i+1).padStart(2,'0')}</span>${esc(c.title)}</summary><a href="#chapter/${c.id}">章节概览</a>${c.topics.map(t=>`<a class="${route[2]===t.id?'active':''}" href="#lesson/${c.id}/${t.id}">${esc(t.title)}</a>`).join('')}</details>`).join('')}</nav><div class="sidebar-bottom"><div class="offline-box"><strong><span class="status-dot"></span>离线学习，随时开始</strong><div>学习数据保存在当前浏览器</div><button class="backup-btn" data-go-backup>数据备份与恢复 ↗</button></div></div>`;
     $('[data-go-backup]').onclick=()=>{location.hash='about';setTimeout(()=>$('#dataBackup')?.scrollIntoView(),50);};
   }
@@ -123,10 +111,10 @@
   function bindLesson(id){const t=findTopic(id);if(!t)return;
     $$('[data-mode]').forEach(b=>b.onclick=()=>{store.mode=b.dataset.mode;persist();render();});
     $$('[data-scroll]').forEach(a=>a.onclick=e=>{e.preventDefault();$('#'+a.dataset.scroll)?.scrollIntoView({behavior:'smooth'});});
-    $('[data-review-topic]').onclick=()=>{if(store.assessment.reviewFlags[id])delete store.assessment.reviewFlags[id];else store.assessment.reviewFlags[id]=true;persist();render();};
+    $('[data-review-topic]').onclick=()=>{if(store.assessment.reviewFlags[id])delete store.assessment.reviewFlags[id];else store.assessment.reviewFlags[id]=true;persist();const marked=!!store.assessment.reviewFlags[id];window.SignalIcons.button($('[data-review-topic]'),marked?'check':'clock',marked?'已标记需要复习':'标记需要复习',{pressed:marked});};
     $('[data-reassess]').onclick=()=>{location.hash=`exercises?chapter=${t.chapter}&topic=${id}&reassess=1`;};
-    $('[data-bookmark]').onclick=()=>{toggleId(store.bookmarks,id);persist();render();notify(store.bookmarks.includes(id)?'已收藏知识点':'已取消收藏');};
-    $$('[data-quick]').forEach(b=>b.onclick=()=>{const i=+b.dataset.quick,correct=i===t.quick.answer;store.quick[id]=correct;activity();persist();$$('[data-quick]').forEach(x=>{x.classList.remove('selected','correct','incorrect');if(+x.dataset.quick===t.quick.answer)x.classList.add('correct');if(+x.dataset.quick===i&&!correct)x.classList.add('incorrect');});$('#quickFeedback').innerHTML=`<div class="feedback ${correct?'success':'error'}"><strong>${correct?'回答正确，继续巩固。':'还差一点，再看看定义。'}</strong><div>${esc(t.quick.explanation)}</div></div>`;MathTypeset($('#quickFeedback'));});
+    $('[data-bookmark]').onclick=()=>{toggleId(store.bookmarks,id);persist();const saved=store.bookmarks.includes(id);window.SignalIcons.button($('[data-bookmark]'),saved?'bookmarkCheck':'bookmark',saved?'已收藏知识点':'收藏知识点',{pressed:saved});notify(store.bookmarks.includes(id)?'已收藏知识点':'已取消收藏');};
+    $$('[data-quick]').forEach(b=>b.onclick=()=>{const i=+b.dataset.quick,correct=i===t.quick.answer;store.quick[id]=correct;activity();persist();$$('[data-quick]').forEach(x=>{x.classList.remove('selected','correct','incorrect');if(+x.dataset.quick===t.quick.answer)x.classList.add('correct');if(+x.dataset.quick===i&&!correct)x.classList.add('incorrect');});$('#quickFeedback').innerHTML=`<div class="feedback ${correct?'success':'error'}"><strong>${correct?'回答正确，继续巩固。':'还差一点，再看看定义。'}</strong><div>${esc(t.quick.explanation)}</div></div>`;MathTypeset($('#quickFeedback'));window.SignalIcons.enhance($('#quickFeedback'));});
   }
   function toggleId(arr,id){const i=arr.indexOf(id);if(i===-1)arr.push(id);else arr.splice(i,1);}
   function renderLabs(id,params){if(!id)return `${heading('交互式信号实验室','从预设教学到自定义表达式，使用同一信号探索时域与频域。')}<div class="card" style="margin-bottom:22px;background:var(--blue-soft)"><div class="eyebrow">CUSTOM SIGNALS · 新增通用信号核心</div><h2>输入你自己的 x(t) 或 x[n]</h2><p class="muted small spaced">安全数学表达式、分段编辑、信号收藏与缩放拖动画布，可用于变换、系统性质、卷积、频谱和采样。</p><div class="btn-row spaced"><a class="btn btn-primary" href="#labs/transform?mode=custom">自定义信号分析 →</a><a class="btn" href="#signal-guide">查看输入语法与计算范围</a></div></div><div class="labs-grid">${labInfo.map((l,i)=>`<div class="card lab-card"><div class="lab-card-preview">${waveSVG(i%3)}</div><div class="eyebrow" style="margin-top:18px">LAB ${String(i+1).padStart(2,'0')} · ${l.en.toUpperCase()}</div><h3>${l.symbol} ${l.name}</h3><p>${l.text}</p><div class="btn-row"><a class="btn btn-soft btn-sm" href="#labs/${l.id}">预设教学 →</a>${l.id!=='poles'?`<a class="btn btn-sm" href="#labs/${l.id}?mode=custom">自定义信号 ↗</a><a class="btn btn-primary btn-sm" href="#labs/${l.id}?mode=practice">练习模式 →</a>`:''}</div></div>`).join('')}</div><div class="lab-note">计算约定：连续时间角频率使用 rad/s，采样率使用 Hz，离散角频率使用 rad/sample。自定义信号频谱采用明确时间窗口，不能直接当作无限区间变换。</div>`;
@@ -163,8 +151,8 @@
 
   function filterHTML(){const opts=(list,value)=>list.map(([v,t])=>`<option value="${esc(v)}" ${String(value)===String(v)?'selected':''}>${esc(t)}</option>`).join(''),topicOptions=topics.filter(t=>filters.chapter==='all'||t.chapter===filters.chapter);return `<div class="filters"><label>课程章节<select data-filter="chapter">${opts([['all','全部章节'],...chapters.map(c=>[c.id,c.title])],filters.chapter)}</select></label><label>知识点<select data-filter="topic">${opts([['all','全部知识点'],...topicOptions.map(t=>[t.id,t.title])],filters.topic)}</select></label><label>难度<select data-filter="difficulty">${opts([['all','全部难度'],[1,'基础'],[2,'进阶'],[3,'挑战']],filters.difficulty)}</select></label><label>题型<select data-filter="type">${opts([['all','全部题型'],...Object.entries(UI.labels)],filters.type)}</select></label><label>训练内容<select data-filter="category">${opts([['all','全部内容'],...([...new Set(questionBank.map(q=>q.category))].map(c=>[c,c]))],filters.category)}</select></label><label>题目来源<select data-filter="source">${opts([['all','全部题目'],['wrong','我的错题'],['favorites','我的收藏']],filters.source)}</select></label></div>`;}
   function renderExerciseArea(){
-    clearInterval(examTimer);const host=$('#exerciseArea');if(!host)return;UI.destroyPlots();window.PhotoWaveform?.destroy();
-    if(session?.ended){host.innerHTML=renderSessionResult();bindSessionResults();MathTypeset(host);return;}
+    clearInterval(examTimer);const host=$('#exerciseArea');if(!host)return;window.SignalIcons.destroy(host);UI.destroyPlots();window.PhotoWaveform?.destroy();
+    if(session?.ended){host.innerHTML=renderSessionResult();bindSessionResults();MathTypeset(host);window.SignalIcons.enhance(host);return;}
     const q=pool[qIndex],record=q?(answers[q.id]||drafts[q.id]):null;selected=record?.selected??null;
     host.innerHTML=`${!session?filterHTML():`<div class="session-banner"><div><strong>${session.type==='reassess'?'知识点重新测评':session.type==='exam'?'期末模拟练习':'随机测试'}</strong><div class="small muted">${pool.length} 题 · ${session.type==='reassess'?'测评交卷后更新掌握；单题历史和错题会保存，未交卷的测评答案仅保留当前页面':'客观题逐题更新掌握，自评不计客观分；未交卷的测试状态仅保留当前页面'}</div></div><span class="timer" id="examClock"></span><button class="btn btn-sm" data-finish>交卷</button></div>`}<div class="exercise-layout"><div>${q?`<section class="card exercise-topic-progress">${UI.assessment(A.topicStats(store.assessment,q.topicId))}</section>`:''}${q?renderQuestion(q,record):empty('这里还没有题目',filters.source==='wrong'?'做错的题会自动进入错题本，重做正确后移出。':'试试调整章节、难度或题型筛选。','#exercises','查看全部习题')}</div><aside class="question-aside">${!session?`<section class="card"><h3>来一次完整练习</h3><p>随机测试使用当前筛选；期末模拟按七章各抽 3 题，共 21 题，45 分钟。</p><button class="btn btn-primary spaced" style="width:100%" data-start="random">随机测试 · 最多 10 题</button><button class="btn spaced" style="width:100%;margin-top:9px" data-start="exam">期末模拟练习 →</button></section>`:''}<section class="card navigator-card"><div class="btn-row" style="justify-content:space-between"><h3>题目导航</h3><span class="small muted">${pool.length} 题</span></div><div class="question-numbers">${pool.map((x,i)=>`<button data-question-index="${i}" class="${qIndex===i?'active':''} ${answers[x.id]?.graded?(answers[x.id].correct?'done':'wrong'):''}" aria-label="第 ${i+1} 题">${i+1}</button>`).join('')}</div></section><section class="card"><h3>解题小习惯</h3><p>先写出定义和适用条件，再计算。遇到拉普拉斯与 Z 变换，别忘记给出收敛域。</p><a class="text-link" style="display:block;margin-top:12px;font-size:11px" href="#formulas">打开公式速查 →</a></section></aside></div>`;
     $$('[data-filter]',host).forEach(s=>s.onchange=()=>{filters[s.dataset.filter]=s.value;if(s.dataset.filter==='chapter')filters.topic='all';session=null;pool=filteredQuestions();qIndex=0;answers={};drafts={};selected=null;renderExerciseArea();});
@@ -176,7 +164,7 @@
     $('[data-next]',host)?.addEventListener('click',()=>{qIndex=Math.min(pool.length-1,qIndex+1);renderExerciseArea();});
     if(q)bindQuestion(q,record);
     if(session?.limit){const tick=()=>{const remaining=Math.max(0,session.limit-(Date.now()-session.start));const el=$('#examClock');if(el)el.textContent=`${Math.floor(remaining/60000).toString().padStart(2,'0')}:${Math.floor(remaining/1000%60).toString().padStart(2,'0')}`;if(!remaining)finishSession();};tick();examTimer=setInterval(tick,1000);}
-    MathTypeset(host);UI.mountPlots(host);
+    MathTypeset(host);UI.mountPlots(host);window.SignalIcons.enhance(host);
   }
 
   function renderQuestion(q,r){return UI.question(q,r,{index:qIndex,total:pool.length,favorite:store.favorites.includes(q.id),chapterTitle:chapterOf(q.chapter)?.title,reassessment:session?.type==='reassess'});}
@@ -184,7 +172,7 @@
   function renderSolution(q,self){return UI.solution(q,self);}
 
   function bindQuestion(q,r){
-    $('[data-favorite]').onclick=()=>{toggleId(store.favorites,q.id);persist();renderExerciseArea();};
+    $('[data-favorite]').onclick=()=>{toggleId(store.favorites,q.id);persist();const saved=store.favorites.includes(q.id);window.SignalIcons.button($('[data-favorite]'),saved?'bookmarkCheck':'bookmark',saved?'已收藏':'收藏',{pressed:saved});};
     if(q.type==='waveform'){window.PhotoWaveform.mount($('[data-waveform-answer]'),q,{record:r,reassessment:session?.type==='reassess',getHistory:()=>store.waveformHistory.filter(row=>row.questionId===q.id),onDraft:value=>{drafts[q.id]={selected:value};},onGrade:(value,result)=>gradeQuestion(q,result.correct,value,false),onRetry:()=>{delete answers[q.id];delete drafts[q.id];selected=null;}});return;}
     $$('[data-answer]').forEach(b=>b.onclick=()=>{const value=+b.dataset.answer;if(q.type==='multiple'){const set=new Set(Array.isArray(selected)?selected:[]);set.has(value)?set.delete(value):set.add(value);selected=[...set].sort((a,b)=>a-b);}else selected=value;drafts[q.id]={selected};$$('[data-answer]').forEach(x=>{const chosen=q.type==='multiple'?selected.includes(+x.dataset.answer):selected===+x.dataset.answer;x.classList.toggle('selected',chosen);if(q.type==='multiple')x.setAttribute('aria-pressed',String(chosen));});});
     $('[data-submit]')?.addEventListener('click',()=>{const value=['numeric','fill'].includes(q.type)?$('#answerInput').value:selected,result=A.grade(q,value);if(!result.valid){notify(result.message||'请填写有效答案。');return;}gradeQuestion(q,result.correct,value);});
@@ -263,9 +251,10 @@
     $('#exportData')?.addEventListener('click',exportData);
     $('#importData')?.addEventListener('change',e=>importData(e.target.files[0]));
   }
-  function closeMenu(){$('#sidebar').classList.remove('open');$('#scrim').classList.remove('open');$('#menuToggle').setAttribute('aria-expanded','false');}
+  function setMenu(open){$('#sidebar').classList.toggle('open',open);$('#scrim').classList.toggle('open',open);const button=$('#menuToggle');button.setAttribute('aria-expanded',String(open));button.setAttribute('aria-label',open?'关闭导航':'打开导航');window.SignalIcons.button(button,open?'close':'menu','',{animate:true});}
+  function closeMenu(){setMenu(false);}
   function render(){
-    clearInterval(examTimer);UI.destroyPlots();window.PhotoWaveform?.destroy();window.LabPractice?.destroy();window.Labs?.destroy();window.CustomLabs?.destroy();currentLab=null;currentCustom=false;currentPractice=false;
+    window.SignalIcons.destroy($('#main'));window.SignalIcons.destroy($('#sidebar'));clearInterval(examTimer);UI.destroyPlots();window.PhotoWaveform?.destroy();window.LabPractice?.destroy();window.Labs?.destroy();window.CustomLabs?.destroy();currentLab=null;currentCustom=false;currentPractice=false;
     const hash=location.hash.slice(1)||'home';const [path,query='']=hash.split('?');const route=path.split('/'),params=new URLSearchParams(query);
     syncMastery();renderSidebar(route);closeMenu();window.SignalTheme?.refresh();
     let html;switch(route[0]){
@@ -287,7 +276,7 @@
     $('#main').innerHTML=html;$('#main').classList.remove('fade-in');void $('#main').offsetWidth;$('#main').classList.add('fade-in');
     const title=({home:'学习概览',chapter:chapterOf(route[1])?.title,lesson:findTopic(route[2])?.title,labs:labInfo.find(l=>l.id===route[1])?.name||'交互实验室',exercises:'习题中心',question:'习题练习',formulas:'公式速查',review:'复习计划',bookmarks:'我的收藏',map:'知识结构',about:'项目说明','signal-guide':'自定义信号指南','photo-waveforms':'拍照绘图练习'})[route[0]]||'学习空间';
     $('#breadcrumb').innerHTML=`学习空间 <span>/</span> ${esc(title)}`;document.title=`${title} · SignalLab 信号与系统`;
-    bindPage(route,params);MathTypeset($('#main'));$('#storageWarning').hidden=storageOK;
+    bindPage(route,params);MathTypeset($('#main'));window.SignalIcons.enhance(document);$('#storageWarning').hidden=storageOK;
   }
   $('#searchOpen').onclick=()=>{$('#searchDialog').showModal();renderSearch();$('#searchInput').focus();};
   $('[data-close-search]').onclick=()=>$('#searchDialog').close();
@@ -295,12 +284,12 @@
   $('#searchDialog').addEventListener('click',e=>{if(e.target===$('#searchDialog')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close();}});
   // Theme preference has its own durable key. Keep export metadata current without serializing all assessment data during capture.
   document.addEventListener('signallab:themepreference',()=>{store.theme=window.SignalTheme?.getPreference()||store.theme;});
-  $('#menuToggle').onclick=()=>{const open=!$('#sidebar').classList.contains('open');$('#sidebar').classList.toggle('open',open);$('#scrim').classList.toggle('open',open);$('#menuToggle').setAttribute('aria-expanded',String(open));};
+  $('#menuToggle').onclick=()=>setMenu(!$('#sidebar').classList.contains('open'));
   $('#scrim').onclick=closeMenu;
-  document.addEventListener('keydown',e=>{if(e.key==='/'&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){e.preventDefault();$('#searchOpen').click();}});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#sidebar').classList.contains('open')){closeMenu();$('#menuToggle').focus();}if(e.key==='/'&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){e.preventDefault();$('#searchOpen').click();}});
   window.addEventListener('hashchange',()=>{render();window.scrollTo(0,0);});
   window.ThemeSwitch?.mount();
   persist();render();
   // Expose read-only snapshots for reproducible offline QA, never used as application state.
-  window.SignalLab={getState:()=>JSON.parse(JSON.stringify(store)),counts:()=>({topics:topics.length,questions:questionBank.length,chapters:chapters.length}),getAssessmentStats:id=>id?A.topicStats(store.assessment,id):A.stats(store.assessment),getQuestionCatalog:()=>questionBank.map(q=>({...q})),contentCounts:()=>({examples:45+Object.values(window.WORKED_EXAMPLES?.byTopic||{}).reduce((n,a)=>n+a.length,0)+Object.values(window.WORKED_EXAMPLES?.byChapter||{}).reduce((n,a)=>n+a.length,0),labFamilies:familyCatalog.length,objectiveQuestions:questionBank.filter(A.isObjective).length}),version:'3.0.0-beta.1'};
+  window.SignalLab={getState:()=>JSON.parse(JSON.stringify(store)),counts:()=>({topics:topics.length,questions:questionBank.length,chapters:chapters.length}),getAssessmentStats:id=>id?A.topicStats(store.assessment,id):A.stats(store.assessment),getQuestionCatalog:()=>questionBank.map(q=>({...q})),contentCounts:()=>({examples:45+Object.values(window.WORKED_EXAMPLES?.byTopic||{}).reduce((n,a)=>n+a.length,0)+Object.values(window.WORKED_EXAMPLES?.byChapter||{}).reduce((n,a)=>n+a.length,0),labFamilies:familyCatalog.length,objectiveQuestions:questionBank.filter(A.isObjective).length}),version:'3.1.0-beta.1'};
 })();
