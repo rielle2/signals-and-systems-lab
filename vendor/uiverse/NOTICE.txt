@@ -1,0 +1,28 @@
+{
+  "source": "https://github.com/uiverse-io/galaxy",
+  "commit": "adbd2adde0a299a3956ea288fb444ec01891ca41",
+  "license": "MIT",
+  "integration": "Adapted ideas and minimal CSS, not a component framework. No runtime dependencies or external requests.",
+  "adaptations": [
+    {
+      "file": "https://github.com/uiverse-io/galaxy/blob/adbd2adde0a299a3956ea288fb444ec01891ca41/Buttons/adamgiebl_shaggy-grasshopper-91.html",
+      "preview": "https://uiverse.io/adamgiebl/shaggy-grasshopper-91",
+      "changes": "Icon-label alignment and quiet press feedback; gradients and large shadows omitted"
+    },
+    {
+      "file": "https://github.com/uiverse-io/galaxy/blob/adbd2adde0a299a3956ea288fb444ec01891ca41/Cards/adamgiebl_new-lionfish-4.html",
+      "preview": "https://uiverse.io/adamgiebl/new-lionfish-4",
+      "changes": "Static restrained frame and solid reading surface; decorative gradients omitted"
+    },
+    {
+      "file": "https://github.com/uiverse-io/galaxy/blob/adbd2adde0a299a3956ea288fb444ec01891ca41/Inputs/alexruix_slippery-frog-10.html",
+      "preview": "https://uiverse.io/alexruix/slippery-frog-10",
+      "changes": "Input icon spacing and focus border; labels and project palette preserved"
+    },
+    {
+      "file": "https://github.com/uiverse-io/galaxy/blob/adbd2adde0a299a3956ea288fb444ec01891ca41/loaders/satyamchaudharydev_yellow-dragon-0.html",
+      "preview": "https://uiverse.io/satyamchaudharydev/yellow-dragon-0",
+      "changes": "Four small transform-only bars during actual local photo analysis; no idle animation or fake progress"
+    }
+  ]
+}

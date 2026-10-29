@@ -1,8 +1,14 @@
-# SignalLab 3.1.0 Beta 测试说明
+# SignalLab 3.2.0 Beta 测试说明
 
 [打开网站](https://rielle2.github.io/signals-and-systems-lab/) · [提交反馈](https://github.com/rielle2/signals-and-systems-lab/issues/new?template=bug_report.yml)
 
 这一版新增19道本地拍照／关键点绘图题，保留分步学习、客观练习评估与实验室训练：**239道例题、328道固定练习和31个参数化波形练习家族**。它们属于不同用途，不合并成一个夸大的题目总数。
+
+## 3.2.0 阅读与界面优化
+
+首页直接显示上次知识点与预计时长；统一卡片边框、圆角、按钮、输入焦点与例题排版，增强浅/深色文字对比度。手机统计卡说明与行动分行，触控输入至少44px、16px输入字；窄屏先展示教学正文，评估卡留在正文后。保留原海天昼夜按钮、唯一圆形扩散及Morphicons状态反馈。
+
+从Galaxy/Uiverse的四项MIT组件中选择性改编按压反馈、静态边框、输入焦点和真实本地照片分析时的加载条；没有引入组件框架、外部字体或CDN。加载只在实际分析中显示，取消/完成后停止，减少动态效果时静态呈现。许可与准确来源随站点保存在`vendor/uiverse/LICENSE`和`vendor/uiverse/NOTICE.txt`。
 
 ## 图标交互
 

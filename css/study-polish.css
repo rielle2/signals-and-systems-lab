@@ -1,0 +1,287 @@
+@charset "UTF-8";
+/* Adapted interaction ideas from MIT Uiverse/Galaxy snippets; see vendor/uiverse.
+ * These styles belong to the study interface. The sea-scene switch is excluded. */
+:root{
+  --muted:#64748b;
+  --border:#dce4ef;
+  --radius:14px;
+  --shadow:0 2px 8px rgb(32 44 67 / .045);
+  --study-control-radius:10px;
+  --study-inner-radius:12px;
+  --study-focus:0 0 0 3px rgb(50 103 233 / .13);
+}
+:root[data-theme=dark]{
+  --muted:#acb9ce;
+  --border:#34445d;
+  --shadow:0 2px 8px rgb(0 0 0 / .1);
+  --study-focus:0 0 0 3px rgb(132 167 255 / .16);
+}
+body{font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;line-height:1.8}
+h1{font-size:27px;letter-spacing:-.55px}
+h2{font-weight:650}
+.page-heading{align-items:flex-start;margin-bottom:26px}
+.page-heading p{font-size:13px;line-height:1.8}
+.fade-in{animation:none}
+.card{border-radius:var(--radius);box-shadow:none}
+.card h3{line-height:1.6}
+.sidebar{padding-top:26px}
+.brand small{font-size:11px;letter-spacing:.25px}
+.nav-label{font-size:11px;font-weight:600;letter-spacing:.35px;margin-top:24px}
+.nav-link{min-height:42px;border-radius:10px;color:var(--muted)}
+.nav-link.active{box-shadow:inset 2px 0 var(--blue);font-weight:650}
+.chapter-nav summary{font-size:12px}
+.chapter-nav a{font-size:12px;line-height:1.7;padding-top:7px;padding-bottom:7px}
+.chapter-num{font-variant-numeric:tabular-nums}
+.breadcrumb{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.search-trigger{min-height:40px;border-radius:var(--study-control-radius);gap:10px}
+.search-trigger:hover{border-color:var(--blue)}
+.search-trigger:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+.date-label{font-variant-numeric:tabular-nums;border-radius:8px}
+
+/* A real next action, rather than a second promotional page heading. */
+.hero{padding:28px;min-height:232px;background:var(--surface);border-color:color-mix(in srgb,var(--blue) 28%,var(--border));box-shadow:var(--shadow)}
+.hero-context{display:flex;align-items:center;gap:8px;position:relative;z-index:2;font-size:12px;color:var(--muted);margin-bottom:12px}
+.hero-context .hero-context-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);flex:none}
+.hero h2{max-width:64%;font-size:25px;line-height:1.6;letter-spacing:-.4px}
+.hero p{font-size:13px;max-width:62%;margin:12px 0 22px;line-height:1.85}
+.hero-wave{width:43%;right:-1%;top:28px;height:160px;opacity:.56;pointer-events:none}
+.hero .btn-row{gap:10px}
+.hero .btn{min-height:42px}
+.today-card{padding:22px;border-color:var(--border)}
+.today-card h3{font-size:15px}
+.today-card p{font-size:12px;line-height:1.85;margin:12px 0}
+.today-task{font-size:12px;line-height:1.7;min-height:34px;margin-top:5px;align-items:flex-start}
+.task-ring{height:5px;width:5px;border:0;background:var(--blue);margin-top:8px}
+.today-icon{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.today-icon .ui-icon{width:17px;height:17px}
+.today-foot{font-size:11px;line-height:1.7;display:flex;flex-wrap:wrap;gap:6px;justify-content:space-between}
+.stats-grid{gap:14px;margin-top:20px}
+.stat{padding:18px;gap:5px 8px;align-content:start;min-width:0}
+.stat-label{font-size:12px;line-height:1.6;min-width:0}
+.stat strong{font-size:29px;line-height:1.35;font-variant-numeric:tabular-nums lining-nums;letter-spacing:-.5px}
+.stat-icon{width:32px;height:32px;border-radius:10px;grid-row:1/3}
+.stat-foot{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;margin-top:10px;font-size:11px;line-height:1.7;min-width:0;align-items:start}
+.stat-foot>span{min-width:0;overflow-wrap:anywhere}
+.stat-foot>span:last-child{color:var(--blue);font-weight:500}
+.stat-foot .progress{width:100%!important;margin-top:4px}
+.section-title h2{font-size:18px}
+.section-title a{font-size:12px}
+.chapter-card{transition:none;border-color:var(--border)}
+.chapter-card:hover{transform:none;box-shadow:none;border-color:var(--blue)}
+.chapter-card h3{font-size:14px;line-height:1.6}
+.chapter-card .en{font-size:10px;letter-spacing:.1px}
+.chapter-card p{font-size:12px;line-height:1.75;min-height:0;margin-bottom:16px}
+.chapter-meta{font-size:11px;gap:10px;align-items:flex-end}
+.chapter-meta>span{min-width:0}
+.chapter-meta>span:last-child{text-align:right}
+.chapter-icon{border-radius:11px}
+.progress{height:6px;background:var(--border);border-radius:6px}
+.lab-promo h3{font-size:15px}
+.lab-promo p,.tip-card p{font-size:12px;line-height:1.85}
+.lab-list a{min-height:40px;font-size:12px;border:1px solid transparent}
+.lab-list a:hover{border-color:var(--border);background:var(--blue-soft)}
+.tip-card{background:var(--surface)}
+
+/* Compact press feedback and explicit, low-cost state properties. */
+.btn{min-height:40px;border-radius:var(--study-control-radius);font-size:12px;font-weight:600;line-height:1.65;box-shadow:none;transition:background-color .14s,color .14s,border-color .14s,transform .1s}
+.btn:hover,.btn.ui-icon-button:hover{transform:none;box-shadow:none}
+.btn-primary{box-shadow:0 2px 4px rgb(50 103 233 / .12)}
+:root[data-theme=dark] .btn-primary,:root[data-theme=dark] .btn-primary:hover,:root[data-theme=dark] .lab-tabs a.active,:root[data-theme=dark] .skip-link{color:#10192a}
+.btn-primary:disabled{box-shadow:none}
+.btn:active:not(:disabled){transform:translateY(1px)}
+.btn-sm{min-height:36px;font-size:12px;padding:7px 11px}
+.btn:focus-visible,.option:focus-visible,.lab-tabs a:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+.btn[aria-pressed=true]:not(.btn-primary){background:var(--blue-soft);border-color:var(--blue);color:var(--blue)}
+.btn:disabled{opacity:.55;transform:none}
+.badge{font-size:11px;border-radius:6px;line-height:1.6;padding:3px 7px}
+.text-link{font-size:12px;line-height:1.8}
+.btn-row,.question-actions{gap:10px}
+input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{
+  border-color:var(--border);border-radius:var(--study-control-radius);background:var(--surface);color:var(--text);min-height:40px;box-shadow:none;
+  transition:border-color .14s,background-color .14s;
+}
+input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]):focus-visible,select:focus-visible,textarea:focus-visible{
+  border-color:var(--blue);outline:2px solid var(--blue);outline-offset:2px;
+}
+input::placeholder,textarea::placeholder{color:var(--muted);opacity:.9}
+label,.filters label{line-height:1.7}
+.filters label{font-size:12px;gap:6px}
+.filters select{font-size:12px}
+.search-input{font-size:16px;line-height:1.6;min-height:48px!important}
+.search-results a{border-radius:10px}
+.dialog-head h2{font-size:19px}
+
+/* Reading rhythm: equations and plots keep their full available width. */
+.lesson-head h1{font-size:27px;line-height:1.5}
+.lesson-section h2{font-size:18px;margin-bottom:18px}
+.lesson-section p,.lesson-section li{font-size:14px;line-height:1.95}
+.lesson-section>p,.lesson-section>.steps,.lesson-section>.pitfalls{max-width:78ch}
+.section-no{font-size:11px;border-radius:6px;padding:3px 7px;font-variant-numeric:tabular-nums}
+.formula-box{border-radius:var(--study-inner-radius);padding:16px 18px;border-color:var(--border);background:var(--surface2)}
+.katex-display{padding-top:7px;padding-bottom:7px}
+.worked-example{border-radius:var(--study-inner-radius);padding:18px;background:var(--surface2);border-color:var(--border)}
+.worked-example h3{font-size:15px;line-height:1.75}
+.worked-example p,.solution p{font-size:14px;line-height:1.9}
+.worked-example .example-source,.example-source{font-size:11px;line-height:1.8}
+.worked-example details{padding-top:10px;margin-top:12px}
+.worked-example summary,.solution summary,.photo-history>summary,.wave-editor details>summary{font-size:13px;line-height:1.75;border-radius:8px;min-height:40px;padding:8px 0}
+.ui-icon-summary{gap:12px}
+.worked-example summary>.ui-icon,.solution summary>.ui-icon{margin-right:2px}
+.worked-example details[open]>summary,.solution details[open]>summary{font-weight:600}
+.lesson-aside h3,.question-aside h3{font-size:14px}
+.assessment-note,.question-aside p{font-size:12px;line-height:1.85}
+.assessment-panel{border-radius:var(--study-inner-radius)}
+.assessment-status{gap:8px;align-items:center}
+.assessment-label{font-size:12px;line-height:1.7}
+.assessment-numbers{font-variant-numeric:tabular-nums}
+.answer-box{border-radius:0 10px 10px 0;padding:16px 18px;font-size:14px;line-height:1.9}
+.mode-switch{border-radius:10px;padding:4px;gap:4px}
+.mode-switch button{border-radius:7px;font-size:12px;min-height:34px;padding:6px 12px}
+.option{border-radius:var(--study-inner-radius);padding:14px 16px;font-size:14px;line-height:1.8;transition:background-color .14s,border-color .14s}
+.option.selected{box-shadow:inset 0 0 0 1px var(--blue)}
+.option-letter{border-radius:7px;font-weight:600;background:var(--surface2)}
+.feedback{border-radius:var(--study-inner-radius);font-size:13px;line-height:1.85;border:1px solid var(--border)}
+.feedback.success,.feedback.error{color:var(--text)}
+.feedback.success>strong{color:var(--green)}
+.feedback.error>strong{color:var(--red)}
+.question-prompt{font-size:17px;line-height:1.9;margin:20px 0}
+.question-numbers{gap:7px}
+.question-numbers button{border-radius:7px;font-size:11px;min-height:34px;font-variant-numeric:tabular-nums}
+.question-numbers button.active{box-shadow:inset 0 0 0 1px var(--blue)}
+
+/* A quieter workbench: group controls, keep waveforms and coordinates dominant. */
+.lab-tabs a{border-radius:9px;min-height:38px;padding:8px 13px;font-size:12px;font-weight:500}
+.lab-workspace .lab-controls{gap:16px}
+.lab-workspace .lab-controls label,.custom-controls>label{font-size:12px;line-height:1.7}
+.lab-workspace .lab-plot,.signal-editor,.signal-plot{border-radius:var(--study-inner-radius);border-color:var(--border);box-shadow:none}
+.lab-plot h3,.sgp-toolbar strong{font-size:14px}
+.lab-note,.custom-note{font-size:13px;line-height:1.9;border:1px solid var(--border)}
+.lab-plot .lab-caption,.sgp-help,.sgp-coordinate,.sgp-status,.sge-help,.sge-status{font-size:12px;line-height:1.8}
+.sge-heading h2,.sge-heading h3{font-size:16px}
+.sge-source{border-radius:10px;line-height:1.75}
+.sge-shortcuts{gap:6px}
+.sge-shortcuts button{border-color:var(--border);border-radius:7px}
+.sgp-toolbar{gap:14px}
+.sgp-buttons{gap:8px}
+.sgp-range{gap:10px}
+.sgp-range label{font-size:12px}
+.signal-plot canvas{border-radius:8px}
+.photo-privacy{border-radius:0 10px 10px 0;font-size:12px;line-height:1.85;color:var(--text)}
+.photo-drop{border-width:1px;border-color:var(--muted);border-radius:12px;background:var(--surface2)}
+.photo-drop>p{font-size:13px;line-height:1.9;padding:24px}
+.photo-drop.is-dragging{border-color:var(--blue);border-style:solid;box-shadow:inset 0 0 0 1px var(--blue)}
+.photo-waveform h3{font-size:16px}
+.photo-calibration{border-radius:12px;padding:16px}
+.photo-calibration legend{font-size:14px;font-weight:600}
+.photo-calibration>p,.photo-calibration-row label,.photo-recognition{font-size:12px;line-height:1.85}
+.photo-calibration-row{gap:10px;margin:12px 0}
+.photo-calibration-row output{font-size:11px}
+.wave-check{font-size:13px;line-height:1.85;gap:10px}
+.wave-check input{margin-top:3px}
+.wave-point-table{font-variant-numeric:tabular-nums}
+.wave-point-table th{font-size:12px;line-height:1.7}
+.photo-grade{border-radius:12px;font-size:13px;line-height:1.85}
+.photo-history{padding-top:10px}
+.wave-practice-intro p{font-size:14px;line-height:1.9}
+.wave-question-list>a{border-radius:14px}
+.wave-question-list h3{font-size:15px}
+.wave-question-list p{font-size:12px;line-height:1.8}
+
+/* Adapted Uiverse loading bars. Never displayed without real analysis work. */
+.study-busy{display:flex;align-items:center;gap:9px;min-height:30px;font-size:12px;color:var(--muted);margin-top:10px}
+.study-busy[hidden]{display:none}
+.study-busy-bars{display:flex;align-items:center;justify-content:center;gap:3px;width:24px;height:18px;flex:none}
+.study-busy-bars i{display:block;width:3px;height:14px;border-radius:2px;background:var(--blue);transform:scaleY(.45)}
+.study-busy:not([hidden]) .study-busy-bars i{animation:study-working .52s ease-in-out infinite alternate}
+.study-busy-bars i:nth-child(2){animation-delay:.1s!important}
+.study-busy-bars i:nth-child(3){animation-delay:.2s!important}
+.study-busy-bars i:nth-child(4){animation-delay:.3s!important}
+@keyframes study-working{to{transform:scaleY(1)}}
+.photo-waveform progress{height:8px;border:0;border-radius:8px;background:var(--border);overflow:hidden}
+.photo-waveform progress::-webkit-progress-bar{border-radius:8px;background:var(--border)}
+.photo-waveform progress::-webkit-progress-value{border-radius:8px;background:var(--blue)}
+.photo-waveform progress::-moz-progress-bar{border-radius:8px;background:var(--blue)}
+
+@media(hover:hover) and (pointer:fine){
+  .nav-link,.chapter-card,.lab-card,.wave-question-list>a{transition:border-color .14s,background-color .14s}
+  .worked-example summary:hover,.solution summary:hover{background:var(--blue-soft)}
+  .today-task:hover{text-decoration:underline;text-underline-offset:4px}
+}
+@media(max-width:1100px){
+  .hero h2{max-width:72%;font-size:24px}
+  .hero-wave{opacity:.36;width:40%}
+}
+@media(max-width:1000px){
+  .lesson-content{grid-row:1}
+  .lesson-aside{grid-row:auto;align-items:flex-start}
+}
+@media(max-width:760px){
+  main{padding-top:22px}
+  .page-heading{margin-bottom:20px}
+  .page-heading h1{font-size:25px}
+  .page-heading p{font-size:13px;line-height:1.8}
+  .hero{padding:22px;min-height:0}
+  .hero-context{font-size:12px;margin-bottom:8px}
+  .hero h2{font-size:23px;line-height:1.55;max-width:100%}
+  .hero p{font-size:13px;line-height:1.85;max-width:100%;margin:10px 0 18px}
+  .hero-wave{top:auto;bottom:0;right:-3%;width:46%;height:100px;opacity:.12}
+  .hero .btn-row{gap:8px}
+  .hero .btn{font-size:12px;padding:9px 12px;min-height:44px}
+  .stats-grid{gap:12px;margin-top:16px}
+  .stat{padding:16px;gap:5px 7px;grid-template-columns:minmax(0,1fr) 30px}
+  .stat strong{font-size:27px}
+  .stat-icon{width:30px;height:30px}
+  .stat-label{font-size:11px;min-height:0}
+  .stat-foot{font-size:11px;gap:6px;margin-top:8px;line-height:1.75}
+  .chapter-card{padding:18px}
+  .chapter-card h3{font-size:14px}
+  .chapter-card .en{font-size:10px}
+  .chapter-card p{display:block;font-size:12px}
+  .chapter-meta{font-size:11px}
+  .lesson-head h1{font-size:25px}
+  .lesson-content .card{padding:20px}
+  .lesson-section p,.lesson-section li{font-size:14px;line-height:1.95}
+  .lesson-section h2{font-size:18px}
+  .worked-example{padding:15px}
+  .worked-example p,.solution p{font-size:14px}
+  .worked-example summary,.solution summary{font-size:13px;min-height:44px}
+  .formula-box{padding:14px 12px}
+  .question-prompt{font-size:16px;line-height:1.95}
+  .option{font-size:14px;padding:13px 12px;gap:10px}
+  .question-aside .card{padding:18px}
+  .lab-tabs{gap:7px}
+  .lab-tabs a{font-size:12px;padding:8px 11px}
+  .lab-workspace .lab-controls{gap:12px}
+  .signal-editor,.signal-plot{padding:14px}
+  .photo-calibration{padding:12px}
+  .photo-calibration-row>button{min-width:130px}
+  .photo-waveform h3{font-size:15px}
+  .wave-practice-intro{padding:20px}
+  .wave-practice-intro p{font-size:13px}
+}
+@media(pointer:coarse){
+  .btn,.btn-sm,.hero .btn,.photo-waveform .btn,.signal-editor .btn,.signal-plot .btn,.search-trigger,.lab-list a{min-height:44px}
+  .mode-switch button,.lab-tabs a,.question-numbers button{min-height:44px}
+  .worked-example summary,.solution summary,.photo-history>summary,.wave-editor details>summary{min-height:44px}
+  input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{min-height:44px;font-size:16px}
+  .wave-point-table input,.wave-point-table select{font-size:16px}
+  .nav-link,.chapter-nav summary,.chapter-nav a{min-height:44px}
+  .btn:hover,.chapter-card:hover{transform:none;box-shadow:none}
+  /* Touch feedback is immediate. Avoid repainting control colors alongside
+   * an actively computed signal; stateful SVG and the theme keep their motion. */
+  .btn,.option,input,select,textarea,.search-trigger{transition:none}
+  input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]){transition:none}
+}
+/* Capture final colors, never a hover/focus color transition mid-flight.
+ * Scope to this layer's controls; the sea-scene's live SVG animation stays on. */
+:root[data-theme-transition=native] :where(.btn,.nav-link,.chapter-card,.lab-card,.wave-question-list>a,.option,input,select,textarea){transition:none!important}
+@media(prefers-reduced-motion:reduce){
+  .btn,.nav-link,.chapter-card,.lab-card,.wave-question-list>a,.option,input,select,textarea,.search-trigger{transition:none!important}
+  .btn:active:not(:disabled){transform:none}
+  .study-busy-bars i{animation:none!important;transform:scaleY(.65)}
+}
+@media print{
+  :root{--muted:#475569;--border:#cbd5e1}
+  .card{box-shadow:none}
+  .study-busy{display:none}
+}
