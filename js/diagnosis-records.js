@@ -5,7 +5,8 @@
   'use strict';
   const DAY=86400000,MAX_TIME=4102444800000;
   const LIMITS=Object.freeze({events:1000,retakes:100,backupBytes:5*1024*1024,depth:24,nodes:500000,entries:10000});
-  const FORMAT='signallab.learning.backup',FORMAT_VERSION=3;
+  const FORMAT='signallab.learning.backup',FORMAT_VERSION=3,TRACK_FORMAT_VERSION=4;
+  const TRACK_IDS=['preview','classroom','finals'];
   const BAD_KEYS=new Set(['__proto__','prototype','constructor']);
   const ID=/^[A-Za-z0-9][A-Za-z0-9_.:@/-]{0,199}$/;
   const isObject=value=>{if(!value||typeof value!=='object'||Array.isArray(value))return false;const p=Object.getPrototypeOf(value);return p===null||Object.getPrototypeOf(p)===null;};
@@ -149,7 +150,7 @@
     for(const e of list(d.events,LIMITS.events,path+'.events')){keys(e,['questionId','topicId','errorTypeIds','correct','at','lastAt','attemptKey','round','kind','correctedAt'],path+'.events');if(!eventOf(e,filters()))fail(path,'错因记录字段无效。');}
     for(const r of list(d.retakes,LIMITS.retakes,path+'.retakes')){keys(r,['topicId','at','round','results'],path+'.retakes');for(const x of list(r.results,100,path+'.retakes.results'))keys(x,['questionId','correct'],path+'.retakes.results');if(!retakeOf(r,filters()))fail(path,'错因重测记录无效。');}
   }
-  const DATA_KEYS=['version','theme','mode','visited','mastered','legacyMastered','bookmarks','favorites','wrong','attempts','quick','last','activity','assessment','waveformHistory','diagnostics','exportedAt'];
+  const DATA_KEYS=['version','theme','mode','visited','mastered','legacyMastered','bookmarks','favorites','wrong','attempts','quick','last','activity','assessment','waveformHistory','diagnostics','examHistory','exportedAt'];
   function validateData(data){
     keys(data,DATA_KEYS,'.data');if(![1,2].includes(data.version))fail('.data.version','只支持旧版1/2学习记录。');
     identifierList(data.visited,'.data.visited');for(const k of ['bookmarks','favorites','wrong'])if(data[k]!==undefined)identifierList(data[k],'.data.'+k);
@@ -163,7 +164,28 @@
     if(data.assessment!==undefined)validateAssessment(data.assessment,'.data.assessment');
     if(data.waveformHistory!==undefined)for(const r of list(data.waveformHistory,80,'.data.waveformHistory')){keys(r,['questionId','at','correct','model','source','counted','pending'],'.data.waveformHistory');identifier(r.questionId,'.data.waveformHistory');timestamp(r.at,'.data.waveformHistory');boolean(r.correct,'.data.waveformHistory');if(!['manual','photo'].includes(r.source))fail('.data.waveformHistory','波形来源无效。');for(const k of ['counted','pending'])if(r[k]!==undefined)boolean(r[k],'.data.waveformHistory');validateModel(r.model,'.data.waveformHistory.model');}
     if(data.diagnostics!==undefined)validateDiagnostics(data.diagnostics,'.data.diagnostics');
+    if(data.examHistory!==undefined)validateExamHistory(data.examHistory,'.data.examHistory');
     if(data.exportedAt!==undefined)dateString(data.exportedAt,'.data.exportedAt');
+  }
+  function validateExamHistory(rows,path){
+    const seen=new Set();
+    for(const r of list(rows,30,path)){
+      keys(r,['id','type','at','total','correct','manual','answered','questionIds'],path);identifier(r.id,path+'.id');if(seen.has(r.id))fail(path,'同一次测验不能重复。');seen.add(r.id);
+      if(!['exam','random','reassess'].includes(r.type))fail(path,'测验类型无效。');timestamp(r.at,path+'.at');identifierList(r.questionIds,path+'.questionIds',100);
+      if(new Set(r.questionIds).size!==r.questionIds.length)fail(path,'测验题目须不同。');
+      integer(r.total,0,r.questionIds.length,path+'.total');integer(r.answered,0,r.total,path+'.answered');integer(r.correct,0,r.answered,path+'.correct');integer(r.manual,0,r.questionIds.length-r.total,path+'.manual');
+    }
+  }
+  function validateWorkspace(data){
+    keys(data,['version','activeTrack','shared','tracks'],'.data');if(data.version!==3||!TRACK_IDS.includes(data.activeTrack))fail('.data','三板块数据版本或当前板块无效。');
+    keys(data.shared,['theme','bookmarks','favorites'],'.data.shared');if(!['system','light','dark'].includes(data.shared.theme))fail('.data.shared','主题元数据无效。');
+    identifierList(data.shared.bookmarks,'.data.shared.bookmarks');identifierList(data.shared.favorites,'.data.shared.favorites');keys(data.tracks,TRACK_IDS,'.data.tracks');
+    for(const id of TRACK_IDS){const track=data.tracks[id];if(!track||track.version!==2)fail('.data.tracks.'+id,'须提供独立的version2板块记录。');if(['theme','bookmarks','favorites'].some(k=>Object.prototype.hasOwnProperty.call(track,k)))fail('.data.tracks.'+id,'主题和收藏须位于shared，不能在各板块重复定义。');validateData(track);}
+  }
+  function summaryOf(data){
+    const workspace=data.version===3,active=workspace?data.tracks[data.activeTrack]:data;
+    const summarize=track=>({visited:track.visited.length,objectiveRecords:Object.keys(track.assessment?.records||{}).length,wrongQuestions:(track.wrong||[]).length,diagnosticEvents:track.diagnostics?.events.length||0,examResults:track.examHistory?.length||0});
+    return {...summarize(active),...(workspace?{activeTrack:data.activeTrack,tracks:TRACK_IDS.map(id=>({trackId:id,...summarize(data.tracks[id])}))}:{})};
   }
   function dateString(value,path){if(typeof value!=='string'||value.length>40||!Number.isFinite(Date.parse(value))||!time(Date.parse(value)))fail(path,'导出时间无效。');}
   function validateSnapshot(rows){
@@ -173,19 +195,21 @@
   function parseBackup(text){
     if(typeof text!=='string'||text.length>LIMITS.backupBytes||bytes(text)>LIMITS.backupBytes)fail('','文件超过5MiB限制。');
     let raw;try{raw=JSON.parse(text);}catch{fail('','不是有效JSON文件。');}
-    treeCheck(raw);let data,legacy=false;
-    if(raw?.format===FORMAT){keys(raw,['format','formatVersion','exportedAt','data','chapterMastery'],'');if(raw.formatVersion!==FORMAT_VERSION)fail('.formatVersion','数据格式版本不受支持。');dateString(raw.exportedAt,'.exportedAt');data=raw.data;if(raw.chapterMastery!==undefined)validateSnapshot(raw.chapterMastery);}
-    else{legacy=true;data=raw;}
-    validateData(data);const clean=copy(data);delete clean.exportedAt;
-    return {data:clean,formatVersion:legacy?data.version:FORMAT_VERSION,legacy,summary:{visited:data.visited.length,objectiveRecords:Object.keys(data.assessment?.records||{}).length,wrongQuestions:(data.wrong||[]).length,diagnosticEvents:data.diagnostics?.events.length||0}};
+    treeCheck(raw);let data,legacy=false,formatVersion;
+    if(raw?.format===FORMAT){keys(raw,['format','formatVersion','exportedAt','data','chapterMastery'],'');if(![FORMAT_VERSION,TRACK_FORMAT_VERSION].includes(raw.formatVersion))fail('.formatVersion','数据格式版本不受支持。');dateString(raw.exportedAt,'.exportedAt');data=raw.data;formatVersion=raw.formatVersion;if(raw.chapterMastery!==undefined)validateSnapshot(raw.chapterMastery);if(formatVersion===TRACK_FORMAT_VERSION)validateWorkspace(data);else validateData(data);}
+    else{data=raw;legacy=data?.version!==3;formatVersion=legacy?data?.version:TRACK_FORMAT_VERSION;if(legacy)validateData(data);else validateWorkspace(data);}
+    const clean=copy(data);delete clean.exportedAt;
+    return {data:clean,formatVersion,legacy,summary:summaryOf(data)};
   }
   function buildBackup(store,options={}){
-    object(store,'.data');const selected={};for(const k of DATA_KEYS){const field=Object.getOwnPropertyDescriptor(store,k);if(!field||k==='exportedAt')continue;if(field.get||field.set)fail('.data','不接受可执行访问器。');if(field.value!==undefined)selected[k]=field.value;}
-    treeCheck(selected);validateData(selected);const data=copy(selected);data.diagnostics=normalize(data.diagnostics);
+    object(store,'.data');const versionField=Object.getOwnPropertyDescriptor(store,'version');if(versionField?.get||versionField?.set)fail('.data','不接受可执行访问器。');const workspace=versionField?.value===3,selected={};
+    for(const k of workspace?['version','activeTrack','shared','tracks']:DATA_KEYS){const field=Object.getOwnPropertyDescriptor(store,k);if(!field||k==='exportedAt')continue;if(field.get||field.set)fail('.data','不接受可执行访问器。');if(field.value!==undefined)selected[k]=field.value;}
+    treeCheck(selected);if(workspace)validateWorkspace(selected);else validateData(selected);const data=copy(selected);
+    if(workspace)for(const id of TRACK_IDS)data.tracks[id].diagnostics=normalize(data.tracks[id].diagnostics);else data.diagnostics=normalize(data.diagnostics);
     let rows=options.chapterMastery||[];if(!Array.isArray(rows)){object(rows,'.chapterMastery');rows=Object.entries(rows).map(([chapterId,value])=>({chapterId,...value}));}
     const chapterMastery=rows.map(r=>({chapterId:r.chapterId||r.id,correct:r.correct,total:r.total,percent:r.percent,status:r.status,eligible:r.eligible}));validateSnapshot(chapterMastery);
-    const result={format:FORMAT,formatVersion:FORMAT_VERSION,exportedAt:new Date().toISOString(),data,chapterMastery};
+    const result={format:FORMAT,formatVersion:workspace?TRACK_FORMAT_VERSION:FORMAT_VERSION,exportedAt:new Date().toISOString(),data,chapterMastery};
     const text=JSON.stringify(result);if(bytes(text)>LIMITS.backupBytes)fail('','记录超过5MiB，请减少冗余历史后再导出。');return result;
   }
-  global.DiagnosisRecords=Object.freeze({create,normalize,record,completeRetake,merge,stats,due,parseBackup,buildBackup,format:FORMAT,formatVersion:FORMAT_VERSION,limits:LIMITS});
+  global.DiagnosisRecords=Object.freeze({create,normalize,record,completeRetake,merge,stats,due,parseBackup,buildBackup,format:FORMAT,formatVersion:FORMAT_VERSION,trackFormatVersion:TRACK_FORMAT_VERSION,limits:LIMITS});
 })(typeof window!=='undefined'?window:globalThis);
