@@ -3,7 +3,9 @@
   'use strict';
   const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const clone=value=>JSON.parse(JSON.stringify(value));
-  const fmt=v=>Number.isFinite(v)?String(Number(v.toPrecision(10))):'';
+  // Editable endpoints must round-trip exactly. Rounding adjacent 2/3 bounds
+  // in the table can manufacture an overlap when the next field is edited.
+  const fmt=v=>Number.isFinite(v)?String(v):'';
   function mount(host,options={}){
     const domain=options.domain==='dt'?'dt':'ct',range={xmin:-4,xmax:8,ymin:-3,ymax:4,...options.range},step=options.axisStep||{x:1,y:1};
     let model={version:1,domain,segments:[],samples:[],impulses:[],outside:0,endpoints:[]},readonly=false,destroyed=false,drag=null,issues=[],expected=null,draftValid=true;

@@ -5,14 +5,14 @@
   const $$ = (s, root = document) => [...root.querySelectorAll(s)];
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-  const STORE_KEY='signallab.learning.v1',day=86400000,A=window.Assessment,UI=window.LearningUI;
+  const STORE_KEY='signallab.learning.v1',day=86400000,A=window.Assessment,UI=window.LearningUI,D=window.DiagnosisRecords,DE=window.DiagnosisEngine,DV=window.DiagnosisUI;
   const chapters=window.COURSE.chapters;
   const topics=chapters.flatMap(c=>c.topics.map(t=>({...t,chapter:c.id,chapterTitle:c.title})));
   const oldTopicIds=('periodicity periodicity impulse-step energy-power even-odd time-transform energy-power energy-power periodicity time-transform linearity time-invariance time-invariance linearity causality invertibility bibo-stability memory time-invariance invertibility dt-convolution ct-convolution impulse-response zero-input-state differential-difference differential-difference convolution-properties convolution-properties impulse-response ct-convolution ctft ctfs dtfs dtft fourier-properties transform-pairs frequency-response fourier-properties gibbs transform-pairs nyquist aliasing aliasing nyquist sampling-process sampling-process reconstruction nyquist reconstruction aliasing laplace-bilateral laplace-roc laplace-inverse laplace-roc laplace-system unilateral-laplace unilateral-laplace laplace-roc laplace-system laplace-bilateral z-definition z-definition z-roc z-stability-poles z-roc z-system-equations z-system-equations z-stability-poles z-stability-poles z-inverse').split(' ');
-  const questionBank=[...window.QUESTIONS,...(window.PRACTICE_QUESTIONS||[]),...(window.WaveformQuestions||[])].map(q=>{const topicId=q.topicId||oldTopicIds[Number(q.id.slice(1))-1],topic=topics.find(t=>t.id===topicId);return {...q,topicId,topic:topic?.title||q.topic,originalTopic:q.topic,category:q.category||(!A.isObjective(q)?'公式推导':q.chapter==='systems'?'系统性质判断':topicId?.includes('convolution')?'卷积计算':q.chapter==='fourier'?'傅里叶分析':q.chapter==='basics'?'波形分析':'基础应用')};});
+  const questionBank=[...window.QUESTIONS,...(window.PRACTICE_QUESTIONS||[]),...(window.WaveformQuestions||[]),...(window.DiagnosisBank?.questions||[])].map(q=>{const topicId=q.topicId||oldTopicIds[Number(q.id.slice(1))-1],topic=topics.find(t=>t.id===topicId);return {...q,topicId,topic:topic?.title||q.topic,originalTopic:q.topic,category:q.category||(!A.isObjective(q)?'公式推导':q.chapter==='systems'?'系统性质判断':topicId?.includes('convolution')?'卷积计算':q.chapter==='fourier'?'傅里叶分析':q.chapter==='basics'?'波形分析':'基础应用')};});
   const familyCatalog=(window.LabPractice?.listFamilies?.()||[]).map(f=>({...f,id:f.id||f.familyId,familyId:f.familyId||f.id,assessmentKey:f.familyId||f.id,type:'numeric',answer:0}));
   const assessmentCatalog=[...questionBank,...familyCatalog];
-  const blank=()=>({version:2,theme:window.SignalTheme?.getPreference()||'system',mode:'detail',visited:[],mastered:{},legacyMastered:{},bookmarks:[],favorites:[],wrong:[],attempts:{},quick:{},last:null,activity:{},assessment:A.create(),waveformHistory:[]});
+  const blank=()=>({version:2,theme:window.SignalTheme?.getPreference()||'system',mode:'detail',visited:[],mastered:{},legacyMastered:{},bookmarks:[],favorites:[],wrong:[],attempts:{},quick:{},last:null,activity:{},assessment:A.create(),waveformHistory:[],diagnostics:D.create()});
   let store=blank(),storageOK=true,toastTimer,examTimer,currentLab=null,currentCustom=false,currentPractice=false;
   try{const saved=JSON.parse(localStorage.getItem(STORE_KEY)||'null');if(saved&&[1,2].includes(saved.version))store=sanitize(saved);}catch{storageOK=false;}
   function sanitize(saved){
@@ -27,9 +27,10 @@
     for(const [date,v]of Object.entries(saved.activity||{}))if(/^\d{4}-\d{2}-\d{2}$/.test(date)&&Number.isFinite(v))d.activity[date]=Math.max(0,v);
     d.assessment=A.migrate(saved,assessmentCatalog,[...topicIds]);
     for(const row of (Array.isArray(saved.waveformHistory)?saved.waveformHistory:[]).slice(-80)){const q=questionBank.find(q=>q.id===row?.questionId&&q.type==='waveform'),checked=q&&window.WaveformMath?.validate(row.model);if(checked?.valid&&checked.model.domain===q.expectedModel.domain&&typeof row.correct==='boolean'&&Number.isFinite(row.at))d.waveformHistory.push({questionId:q.id,at:Math.max(0,row.at),correct:row.correct,model:checked.model,source:row.source==='photo'?'photo':'manual',counted:row.counted===true,pending:row.pending===true});}
+    d.diagnostics=D.normalize(saved.diagnostics,{topicIds:[...topicIds],questionIds:[...questionIds,...familyCatalog.map(q=>q.familyId)],errorTypeIds:errorCatalog().map(e=>e.id)});
     return d;
   }
-  function syncMastery(){const next={};for(const topic of topics){const stats=A.topicStats(store.assessment,topic.id);if(stats.status==='mastered')next[topic.id]={at:stats.evaluatedAt,due:stats.evaluatedAt+7*day,level:0};}store.mastered=next;}
+  function syncMastery(target=store){const next={};for(const topic of topics){const stats=A.topicStats(target.assessment,topic.id);if(stats.status==='mastered')next[topic.id]={at:stats.evaluatedAt,due:stats.evaluatedAt+7*day,level:0};}target.mastered=next;}
   function persist() { syncMastery();store.theme=window.SignalTheme?.getPreference()||store.theme;try {localStorage.setItem(STORE_KEY,JSON.stringify(store));storageOK=true;} catch {storageOK=false;} $('#storageWarning').hidden = storageOK; }
   function notify(message) {const el=$('#toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2800);}
   function dateKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
@@ -59,7 +60,7 @@
   }
   function renderSidebar(route) {
     const top = route[0]||'home';
-    const links=[['home','学习概览','home'],['labs','交互实验室','lab'],['exercises','习题中心','exercise'],['photo-waveforms','拍照绘图练习','photo'],['review','复习计划','review'],['formulas','公式速查','formula'],['map','知识结构','map'],['bookmarks','我的收藏','bookmark']];
+    const links=[['home','学习概览','home'],['labs','交互实验室','lab'],['exercises','习题中心','exercise'],['photo-waveforms','拍照绘图练习','photo'],['diagnostics','薄弱项诊断','review'],['review','复习计划','review'],['formulas','公式速查','formula'],['map','知识结构','map'],['bookmarks','我的收藏','bookmark']];
     $('#sidebar').innerHTML=`<a class="brand" href="#home"><img class="brand-logo" src="assets/favicon.svg" alt=""><div><strong>SignalLab<span style="color:var(--blue)">.</span></strong><small>信号与系统 · 交互学习</small></div></a><div class="nav-label">学习空间</div><nav>${links.map(([id,title,ico])=>`<a class="nav-link ${top===id?'active':''}" href="#${id}">${icon(ico)}${title}${id==='labs'?'<span class="nav-count">06</span>':id==='review'&&wrongCount()?`<span class="nav-count">${wrongCount()}</span>`:''}</a>`).join('')}</nav><div class="nav-label">课程章节</div><nav aria-label="课程章节">${chapters.map((c,i)=>`<details class="chapter-nav" ${route[1]===c.id?'open':''}><summary><span class="chapter-num">${String(i+1).padStart(2,'0')}</span>${esc(c.title)}</summary><a href="#chapter/${c.id}">章节概览</a>${c.topics.map(t=>`<a class="${route[2]===t.id?'active':''}" href="#lesson/${c.id}/${t.id}">${esc(t.title)}</a>`).join('')}</details>`).join('')}</nav><div class="sidebar-bottom"><div class="offline-box"><strong><span class="status-dot"></span>离线学习，随时开始</strong><div>学习数据保存在当前浏览器</div><button class="backup-btn" data-go-backup>数据备份与恢复 ↗</button></div></div>`;
     $('[data-go-backup]').onclick=()=>{location.hash='about';setTimeout(()=>$('#dataBackup')?.scrollIntoView(),50);};
   }
@@ -69,7 +70,7 @@
   const stepList = arr => `<ol class="steps">${(arr||[]).map(s=>`<li><div>${esc(s)}</div></li>`).join('')}</ol>`;
   function wrongCount(){return store.wrong.length+Object.keys(store.assessment.wrongLabs).length;}
   function masteredCount(){return topics.filter(t=>store.mastered[t.id]).length;}
-  function dueTopics(){return topics.filter(t=>store.assessment.reviewFlags[t.id]||(store.mastered[t.id]&&store.mastered[t.id].due<=Date.now())||A.topicStats(store.assessment,t.id).status==='strengthen');}
+  function dueTopics(){const delayed=new Set(D.due(store.diagnostics,Date.now()).map(r=>r.topicId));return topics.filter(t=>delayed.has(t.id)||store.assessment.reviewFlags[t.id]||(store.mastered[t.id]&&store.mastered[t.id].due<=Date.now())||A.topicStats(store.assessment,t.id).status==='strengthen');}
   function nextTopic(){return topics.find(t=>!store.mastered[t.id])||topics[0];}
   function lastTopic(){return findTopic(store.last?.topic)||nextTopic();}
   function chapterCard(c,i){const p=progressOf(c);return `<a class="chapter-card card" href="#chapter/${c.id}"><div class="chapter-top"><div class="chapter-icon">${symbols[i]}</div><div><h3>${String(i+1).padStart(2,'0')} · ${esc(c.title)}</h3><div class="en">${chapterEnglish[i]}</div></div></div><p>${esc(c.subtitle||c.topics.slice(0,3).map(t=>t.title).join(' · '))}</p><div class="chapter-meta"><span>${c.topics.length} 个知识点</span><span>${p.assessment.total?`${p.assessment.correct}/${p.assessment.total} · ${p.assessment.label}`:'尚未测评 ↗'}</span></div><div class="progress"><span style="width:${p.pct}%"></span></div></a>`;}
@@ -131,7 +132,7 @@
   function shuffle(a){const out=[...a];for(let i=out.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[out[i],out[j]]=[out[j],out[i]];}return out;}
 
   function prepareSession(type,topicId){
-    if(type==='reassess'){pool=shuffle(questionBank.filter(q=>q.topicId===topicId&&A.isObjective(q))).slice(0,5);if(pool.length<5){notify('该知识点的客观题不足5道，暂不能重新测评。');return false;}session={type,topicId,start:Date.now(),limit:0,ended:false};}
+    if(type==='reassess'){const candidates=questionBank.filter(q=>q.topicId===topicId&&A.isObjective(q)),weak=new Set(D.stats(store.diagnostics).topics.filter(t=>t.topicId===topicId).flatMap(t=>[...t.activeQuestions,...t.provisionalQuestions]));pool=[...shuffle(candidates.filter(q=>weak.has(q.id))),...shuffle(candidates.filter(q=>!weak.has(q.id)))].slice(0,5);if(pool.length<5){notify('该知识点的客观题不足5道，暂不能重新测评。');return false;}session={type,topicId,start:Date.now(),limit:0,ended:false};}
     else if(type==='exam'){pool=shuffle(chapters.flatMap(c=>shuffle(questionBank.filter(q=>q.chapter===c.id)).slice(0,3)));session={type,start:Date.now(),limit:45*60000,ended:false};}
     else{pool=shuffle(filteredQuestions()).slice(0,10);session={type:'random',start:Date.now(),limit:0,ended:false};}
     if(!pool.length){notify('当前筛选下没有题目，请调整条件。');session=null;return false;}
@@ -146,12 +147,12 @@
     if(!session){if(params.has('chapter')){filters.chapter=params.get('chapter');filters.topic='all';}if(params.has('topic')){filters.topic=params.get('topic');filters.type='all';filters.category='all';filters.difficulty='all';}filters.source=sub==='wrong'?'wrong':sub==='favorites'?'favorites':'all';pool=filteredQuestions();qIndex=Math.min(qIndex,Math.max(0,pool.length-1));}
     if(params.get('reassess')==='1'&&params.has('topic'))prepareSession('reassess',params.get('topic'));
     const objective=questionBank.filter(A.isObjective).length;
-    return `${heading('习题中心',`${questionBank.length} 道原创练习 · ${objective} 道客观题与 ${questionBank.length-objective} 道分步自我核对题。`,`<a class="btn btn-sm" href="#exercises/wrong">错题本 <span class="badge red">${store.wrong.length+Object.keys(store.assessment.wrongLabs).length}</span></a>`)}<a class="btn btn-soft wave-entry" href="#photo-waveforms">新增：拍照与关键点绘图练习 · ${window.WaveformQuestions?.length||0}题</a><div class="objective-note">掌握依据真实客观作答。每轮同一题只计一次；知识点至少5题，章节至少10题且覆盖3个知识点。复杂推导的自评不参与正确率。</div>${sub==='wrong'?labWrongHTML():''}<div id="exerciseArea"></div>`;
+    return `${heading('习题中心',`${questionBank.length} 道原创练习 · ${objective} 道客观题与 ${questionBank.length-objective} 道分步自我核对题。`,`<a class="btn btn-sm" href="#exercises/wrong">错题本 <span class="badge red">${store.wrong.length+Object.keys(store.assessment.wrongLabs).length}</span></a>`)}<a class="btn btn-soft wave-entry" href="#photo-waveforms">新增：拍照与关键点绘图练习 · ${questionBank.filter(q=>q.type==='waveform').length}题</a><div class="objective-note">掌握依据真实客观作答。每轮同一题只计一次；知识点至少5题，章节至少10题且覆盖3个知识点。复杂推导的自评不参与正确率。</div>${sub==='wrong'?labWrongHTML():''}<div id="exerciseArea"></div>`;
   }
 
   function filterHTML(){const opts=(list,value)=>list.map(([v,t])=>`<option value="${esc(v)}" ${String(value)===String(v)?'selected':''}>${esc(t)}</option>`).join(''),topicOptions=topics.filter(t=>filters.chapter==='all'||t.chapter===filters.chapter);return `<div class="filters"><label>课程章节<select data-filter="chapter">${opts([['all','全部章节'],...chapters.map(c=>[c.id,c.title])],filters.chapter)}</select></label><label>知识点<select data-filter="topic">${opts([['all','全部知识点'],...topicOptions.map(t=>[t.id,t.title])],filters.topic)}</select></label><label>难度<select data-filter="difficulty">${opts([['all','全部难度'],[1,'基础'],[2,'进阶'],[3,'挑战']],filters.difficulty)}</select></label><label>题型<select data-filter="type">${opts([['all','全部题型'],...Object.entries(UI.labels)],filters.type)}</select></label><label>训练内容<select data-filter="category">${opts([['all','全部内容'],...([...new Set(questionBank.map(q=>q.category))].map(c=>[c,c]))],filters.category)}</select></label><label>题目来源<select data-filter="source">${opts([['all','全部题目'],['wrong','我的错题'],['favorites','我的收藏']],filters.source)}</select></label></div>`;}
   function renderExerciseArea(){
-    clearInterval(examTimer);const host=$('#exerciseArea');if(!host)return;window.SignalIcons.destroy(host);UI.destroyPlots();window.PhotoWaveform?.destroy();
+    clearInterval(examTimer);const host=$('#exerciseArea');if(!host)return;window.SignalIcons.destroy(host);UI.destroyPlots();window.PhotoWaveform?.destroy();DV.destroy();
     if(session?.ended){host.innerHTML=renderSessionResult();bindSessionResults();MathTypeset(host);window.SignalIcons.enhance(host);return;}
     const q=pool[qIndex],record=q?(answers[q.id]||drafts[q.id]):null;selected=record?.selected??null;
     host.innerHTML=`${!session?filterHTML():`<div class="session-banner"><div><strong>${session.type==='reassess'?'知识点重新测评':session.type==='exam'?'期末模拟练习':'随机测试'}</strong><div class="small muted">${pool.length} 题 · ${session.type==='reassess'?'测评交卷后更新掌握；单题历史和错题会保存，未交卷的测评答案仅保留当前页面':'客观题逐题更新掌握，自评不计客观分；未交卷的测试状态仅保留当前页面'}</div></div><span class="timer" id="examClock"></span><button class="btn btn-sm" data-finish>交卷</button></div>`}<div class="exercise-layout"><div>${q?`<section class="card exercise-topic-progress">${UI.assessment(A.topicStats(store.assessment,q.topicId))}</section>`:''}${q?renderQuestion(q,record):empty('这里还没有题目',filters.source==='wrong'?'做错的题会自动进入错题本，重做正确后移出。':'试试调整章节、难度或题型筛选。','#exercises','查看全部习题')}</div><aside class="question-aside">${!session?`<section class="card"><h3>来一次完整练习</h3><p>随机测试使用当前筛选；期末模拟按七章各抽 3 题，共 21 题，45 分钟。</p><button class="btn btn-primary spaced" style="width:100%" data-start="random">随机测试 · 最多 10 题</button><button class="btn spaced" style="width:100%;margin-top:9px" data-start="exam">期末模拟练习 →</button></section>`:''}<section class="card navigator-card"><div class="btn-row" style="justify-content:space-between"><h3>题目导航</h3><span class="small muted">${pool.length} 题</span></div><div class="question-numbers">${pool.map((x,i)=>`<button data-question-index="${i}" class="${qIndex===i?'active':''} ${answers[x.id]?.graded?(answers[x.id].correct?'done':'wrong'):''}" aria-label="第 ${i+1} 题">${i+1}</button>`).join('')}</div></section><section class="card"><h3>解题小习惯</h3><p>先写出定义和适用条件，再计算。遇到拉普拉斯与 Z 变换，别忘记给出收敛域。</p><a class="text-link" style="display:block;margin-top:12px;font-size:11px" href="#formulas">打开公式速查 →</a></section></aside></div>`;
@@ -167,7 +168,7 @@
     MathTypeset(host);UI.mountPlots(host);window.SignalIcons.enhance(host);
   }
 
-  function renderQuestion(q,r){return UI.question(q,r,{index:qIndex,total:pool.length,favorite:store.favorites.includes(q.id),chapterTitle:chapterOf(q.chapter)?.title,reassessment:session?.type==='reassess'});}
+  function renderQuestion(q,r){return UI.question(q,r,{index:qIndex,total:pool.length,favorite:store.favorites.includes(q.id),chapterTitle:chapterOf(q.chapter)?.title,reassessment:session?.type==='reassess'})+(q.type!=='waveform'&&r?.graded&&A.isObjective(q)?'<div data-question-diagnosis></div>':'');}
 
   function renderSolution(q,self){return UI.solution(q,self);}
 
@@ -181,23 +182,26 @@
     $('[data-retry]')?.addEventListener('click',()=>{delete answers[q.id];delete drafts[q.id];selected=null;renderExerciseArea();});
     $('#answerInput')?.addEventListener('input',e=>{drafts[q.id]={selected:e.target.value};});
     $('#answerInput')?.addEventListener('keydown',e=>{if(e.key==='Enter')$('[data-submit]')?.click();});
+    if(r?.graded&&A.isObjective(q)){const host=$('[data-question-diagnosis]');if(host){const result=A.grade(q,r.selected);DV.mount(host,{question:q,submission:r.selected,result,diagnosis:DE.analyze(q,r.selected,result)});}}
   }
 
   function gradeQuestion(q,correct,value,redraw=true){
-    const manual=!A.isObjective(q),pending=session?.type==='reassess';let counted=false;
-    if(q.type==='waveform'){const checked=A.grade(q,value);if(!checked.valid||!checked.gradable||typeof checked.correct!=='boolean')throw new Error('数字波形未通过可靠判题检查，未保存成绩。');correct=checked.correct;}
+    if(answers[q.id]?.graded)return answers[q.id];
+    const manual=!A.isObjective(q),pending=session?.type==='reassess',checked=manual?null:A.grade(q,value);let counted=false;
+    if(!manual){if(!checked.valid||!checked.gradable||typeof checked.correct!=='boolean')throw new Error('答案未通过可靠判题检查，未保存成绩或错因。');correct=checked.correct;}
     if(manual)A.manual(store.assessment,q,correct);else if(!pending)counted=A.record(store.assessment,q,A.grade(q,value)).counted;
     answers[q.id]={graded:true,correct,selected:value,revealed:true,counted,pending};
     const a=store.attempts[q.id]||{total:0,correct:0};a.total++;a.correct+=correct?1:0;a.lastCorrect=correct;a.at=Date.now();store.attempts[q.id]=a;
     if(q.type==='waveform'){answers[q.id].waveAt=a.at;store.waveformHistory.push({questionId:q.id,at:a.at,correct,model:window.WaveformMath.normalize(value.model),source:value.source==='photo'?'photo':'manual',counted,pending});store.waveformHistory=store.waveformHistory.slice(-80);}
     if(correct)store.wrong=store.wrong.filter(id=>id!==q.id);else{if(!store.wrong.includes(q.id))store.wrong.push(q.id);store.assessment.reviewFlags[q.topicId]=true;}
+    if(!manual)recordDiagnosis(q,value,checked,pending);
     activity();persist();if(redraw)renderExerciseArea();else{const panel=$('.exercise-topic-progress');if(panel)panel.innerHTML=UI.assessment(A.topicStats(store.assessment,q.topicId));}document.dispatchEvent(new CustomEvent('signallab:assessmentchange'));return answers[q.id];
   }
 
   function finishSession(){if(!session||session.ended)return;
     if(session.type==='reassess'&&!session.reassessed){
       if(pool.some(q=>!answers[q.id]?.graded)){notify('请完成本轮全部5道不同题，再提交测评。');return;}
-      try{A.reassess(store.assessment,pool.map(q=>({id:q.id,value:answers[q.id].selected})),questionBank);for(const q of pool){answers[q.id].pending=false;answers[q.id].counted=true;for(const row of store.waveformHistory)if(row.questionId===q.id&&row.at===answers[q.id].waveAt){row.pending=false;row.counted=true;}}session.reassessed=true;persist();}catch(error){notify(error.message);return;}
+      try{A.reassess(store.assessment,pool.map(q=>({id:q.id,value:answers[q.id].selected})),questionBank);for(const q of pool){answers[q.id].pending=false;answers[q.id].counted=true;for(const row of store.waveformHistory)if(row.questionId===q.id&&row.at===answers[q.id].waveAt){row.pending=false;row.counted=true;}}D.completeRetake(store.diagnostics,{topicId:session.topicId,at:Date.now(),round:'retest-'+session.start,results:pool.map(q=>({questionId:q.id,correct:answers[q.id].correct}))});session.reassessed=true;persist();}catch(error){notify(error.message);return;}
     }
     clearInterval(examTimer);session.ended=true;session.elapsed=Date.now()-session.start;renderExerciseArea();
   }
@@ -206,35 +210,93 @@
   function bindSessionResults(){ $$('[data-result-question]').forEach(b=>b.onclick=()=>{session.ended=false;session.limit=0;qIndex=+b.dataset.resultQuestion;renderExerciseArea();});$('[data-end-session]').onclick=()=>{session=null;answers={};qIndex=0;pool=filteredQuestions();renderExerciseArea();};}
   function renderFormulas(params){const ch=params.get('chapter')||'all';return `${heading('公式速查','先确认定义与适用条件，再代入公式。',`<button class="btn btn-sm" data-print>打印速查表 ↗</button>`)}<div class="filters"><label style="max-width:300px">章节<select id="formulaChapter"><option value="all">全部章节</option>${chapters.map(c=>`<option value="${c.id}" ${ch===c.id?'selected':''}>${esc(c.title)}</option>`).join('')}</select></label></div><div class="lab-note" style="margin:0 0 20px">约定：CTFT 正变换不带系数，逆变换带 1/(2π)；DTFS 正变换带 1/N，逆变换不带系数；DTFT 为 2π 周期。所有拉普拉斯与 Z 变换都需连同收敛域理解。</div><div class="formula-grid">${topics.filter(t=>ch==='all'||t.chapter===ch).map(t=>`<section class="card formula-card"><div class="btn-row" style="justify-content:space-between"><h3>${esc(t.title)}</h3><span class="badge">${esc(t.chapterTitle)}</span></div><div class="formula-box">${t.formulas.map(formula).join('')}</div><p class="small muted">${esc(t.pitfalls[0]||'请注意公式的适用条件。')}</p><a style="display:block;margin-top:12px" href="${topicURL(t)}">查看推导与例题 →</a></section>`).join('')}</div>`;}
 
-  function renderReview(){const due=dueTopics(),n=masteredCount(),stats=A.stats(store.assessment,()=>true,5),manual=Object.keys(store.assessment.manual).length;return `${heading('学习评估与复习','用真实练习检验理解，用完整测评更新掌握。',`<button class="btn btn-primary" data-exam-mode>考试复习模式 →</button>`)}<div class="results-grid"><div class="card"><strong>${n} / ${topics.length}</strong><span>已掌握知识点</span></div><div class="card"><strong>${stats.total?stats.percent+'%':'—'}</strong><span>当前客观正确率 · ${stats.correct}/${stats.total} 道不同题</span></div><div class="card"><strong>${manual}</strong><span>自我核对题 · 不计客观分</span></div></div><div class="objective-note">知识点需至少5道不同客观题，章节至少10道且覆盖3个知识点；低于60%需要加强、60%～不足80%学习中、达到80%已掌握。同一题重复作答不会增加权重。知识点重新测评需完成5道不同题并交卷，随后采用新一轮结果；历史练习次数仍保留。</div>${Object.keys(store.legacyMastered).length?'<p class="legacy-note">旧版手动掌握标记与历史作答已保留。旧客观题按最近一次结果每题计一条证据；旧自评不参与客观评估，旧手动掌握标记已转为需要复习。</p>':''}<div class="review-grid"><section class="card"><h2>需要复习 · ${due.length}</h2><p class="assessment-note">包括主动标记、需要加强，以及测评达到掌握7天后的复习提醒。</p>${due.length?due.map(t=>`<div class="review-item"><span class="badge orange">${A.topicStats(store.assessment,t.id).label}</span><a href="${topicURL(t)}">${esc(t.title)}</a></div>`).join(''):'<p class="muted spaced">暂时没有复习提醒，完成新练习或在知识点页标记需要复习。</p>'}</section><section class="card"><h2>错题巩固</h2><p class="assessment-note">普通重做可移出错题本，但不覆盖本轮首次测评分。要更新掌握，请在知识点页发起重新测评。</p><p>${store.wrong.length} 道题库错题 · ${Object.keys(store.assessment.wrongLabs).length} 个实验室错题型</p><a class="btn btn-soft spaced" href="#exercises/wrong">打开错题本 →</a></section><section class="card"><h2>章节掌握度</h2>${chapters.map(c=>`<div class="chapter-assessment"><a href="#chapter/${c.id}">${esc(c.title)}</a>${UI.assessment(A.chapterStats(store.assessment,c.id,c.topics.length),true)}</div>`).join('')}</section><section class="card"><h2>知识点评估</h2>${topics.map(t=>{const a=A.topicStats(store.assessment,t.id);return `<div class="review-item"><a href="${topicURL(t)}">${esc(t.title)}</a><span class="assessment-label ${a.status}">${a.correct}/${a.total} · ${a.label}</span></div>`;}).join('')}</section></div>`;}
+  function recordDiagnosis(q,value,result,pending=false){
+    if(!A.isObjective(q)||!result?.valid||!result.gradable||typeof result.correct!=='boolean')return;
+    const diagnosis=DE.analyze(q,value,result),round=pending?'pending-'+session.start:store.assessment.activeRounds[q.topicId]?'round-'+store.assessment.activeRounds[q.topicId]:'initial';
+    D.record(store.diagnostics,{questionId:q.familyId||q.id,topicId:q.topicId,errorTypeIds:diagnosis.errorTypes.map(e=>e.id),correct:result.correct,at:Date.now(),round,kind:'objective',attemptKey:(q.familyId||q.id)+':'+round+':'+Date.now()+':'+(store.attempts[q.id]?.total||0)});
+  }
+  function errorCatalog(){const types=window.DiagnosisBank.taxonomy;return typeof types==='function'?types():types;}
+  function renderDiagnostics(params=new URLSearchParams()){
+    const summary=D.stats(store.diagnostics),catalog=errorCatalog(),selected=params.get('error'),now=Date.now();
+    const rows=selected?catalog.filter(e=>e.id===selected):catalog;
+    const active=summary.errors.filter(e=>e.status!=='corrected'),plans=summary.topics.filter(t=>t.dueAt>0);
+    const recent=summary.errors.slice().sort((a,b)=>b.lastAt-a.lastAt)[0];
+    const statusText={active:'待巩固',provisional:'已重做，待完整重测',corrected:'已通过重测纠正'};
+    return `${heading('薄弱知识点诊断中心','从答案中的数学证据出发，找到下一步该练什么。',`<a class="btn btn-sm" href="#exercises/wrong">错题重做 · ${store.wrong.length}</a>`)}
+      <div class="results-grid"><section class="card"><strong>${summary.totalWrong}</strong><span>有效错误记录 · 按题目和轮次去重</span></section><section class="card"><strong>${active.length}</strong><span>待巩固的可能错因类型</span></section><section class="card"><strong>${plans.length}</strong><span>延迟重测知识点</span></section></div>
+      <p class="objective-note">这里记录的是答案符合的可能错误规则，不推断你的思维过程。自评、无效答案和未确认的照片不会产生客观错因记录；无法分类的错题仍保留在错题本。统计保留最近1000条诊断事件和100轮重测，同题同轮重复错误不无限累加。</p>
+      ${recent?`<p class="assessment-note">最近出现：${esc(catalog.find(e=>e.id===recent.id)?.title||recent.id)} · ${new Date(recent.lastAt).toLocaleString('zh-CN')}</p>`:'<p class="assessment-note">尚无可分类的错因记录。可以从下方任一类型的基础练习开始，提交后再查看诊断。</p>'}
+      ${plans.length?`<section class="card spaced"><h2>延迟重测计划</h2><p class="assessment-note">同一知识点在至少两道不同题上出错后安排延迟重测。提前重做不能替代到期后的5题完整测评。</p>${plans.map(row=>{const t=findTopic(row.topicId);if(!t)return '';return `<div class="review-item"><a href="${topicURL(t)}">${esc(t.title)}</a><span class="small">${row.dueAt<=now?'已到期':new Date(row.dueAt).toLocaleString('zh-CN')}</span><a class="btn btn-sm" href="#exercises?chapter=${t.chapter}&topic=${t.id}&reassess=1">5题重新测评</a></div>`;}).join('')}</section>`:''}
+      <div class="filters spaced"><label>按错误类型查看<select data-diagnosis-filter><option value="">全部类型</option>${catalog.map(e=>`<option value="${esc(e.id)}" ${selected===e.id?'selected':''}>${esc(e.title)}</option>`).join('')}</select></label><a class="btn" href="#about">备份与恢复诊断记录</a></div>
+      <div class="review-grid">${rows.map(type=>{const stats=summary.errors.find(e=>e.id===type.id),t=findTopic(type.topicId),recommended=DE.recommendations([type.id]);return `<section class="card" data-error-type="${esc(type.id)}"><h2>${esc(type.title)}</h2><p class="assessment-note">${stats?`出现 ${stats.count} 次 · 涉及 ${stats.questionCount} 道不同题 · ${statusText[stats.status]||'待巩固'}`:'尚未记录此类错误；下列为规则关联的原创练习。'}</p>${t?`<p><a href="${topicURL(t)}">${esc(t.title)} · 定义与分步例题</a></p>`:''}<ol class="pitfalls spaced">${recommended.slice(0,4).map(r=>`<li><a href="#question/${esc(r.questionId)}">${esc(r.title)}</a><span class="small muted"> · ${['','基础','进阶','综合'][r.difficulty]||'练习'}</span></li>`).join('')}</ol>${recommended.length<3?'<p class="assessment-note">覆盖缺口：本类型不足3道关联练习，暂不能形成完整训练梯度。</p>':''}${t?`<a class="btn btn-soft spaced" href="#exercises?chapter=${t.chapter}&topic=${t.id}&reassess=1">完成5道不同题重新测评</a>`:''}</section>`;}).join('')}</div>`;
+  }
+
+  function renderReview(){const due=dueTopics(),n=masteredCount(),stats=A.stats(store.assessment,()=>true,5),manual=Object.keys(store.assessment.manual).length;return `${heading('学习评估与复习','用真实练习检验理解，用完整测评更新掌握。',`<button class="btn btn-primary" data-exam-mode>考试复习模式 →</button>`)}<div class="results-grid"><div class="card"><strong>${n} / ${topics.length}</strong><span>已掌握知识点</span></div><div class="card"><strong>${stats.total?stats.percent+'%':'—'}</strong><span>当前客观正确率 · ${stats.correct}/${stats.total} 道不同题</span></div><div class="card"><strong>${manual}</strong><span>自我核对题 · 不计客观分</span></div></div><div class="objective-note">知识点需至少5道不同客观题，章节至少10道且覆盖3个知识点；低于60%需要加强、60%～不足80%学习中、达到80%已掌握。同一题重复作答不会增加权重。知识点重新测评需完成5道不同题并交卷，随后采用新一轮结果；历史练习次数仍保留。</div>${Object.keys(store.legacyMastered).length?'<p class="legacy-note">旧版手动掌握标记与历史作答已保留。旧客观题按最近一次结果每题计一条证据；旧自评不参与客观评估，旧手动掌握标记已转为需要复习。</p>':''}<div class="review-grid"><section class="card"><h2>需要复习 · ${due.length}</h2><p class="assessment-note">包括主动标记、需要加强，以及测评达到掌握7天后的复习提醒。</p>${due.length?due.map(t=>`<div class="review-item"><span class="badge orange">${A.topicStats(store.assessment,t.id).label}</span><a href="${topicURL(t)}">${esc(t.title)}</a></div>`).join(''):'<p class="muted spaced">暂时没有复习提醒，完成新练习或在知识点页标记需要复习。</p>'}</section><section class="card"><h2>错题巩固</h2><p class="assessment-note">普通重做可移出错题本，但不覆盖本轮首次测评分。要更新掌握，请在知识点页发起重新测评。</p><p>${store.wrong.length} 道题库错题 · ${Object.keys(store.assessment.wrongLabs).length} 个实验室错题型</p><a class="btn btn-soft spaced" href="#diagnostics">查看薄弱知识点诊断 →</a></section><section class="card"><h2>章节掌握度</h2>${chapters.map(c=>`<div class="chapter-assessment"><a href="#chapter/${c.id}">${esc(c.title)}</a>${UI.assessment(A.chapterStats(store.assessment,c.id,c.topics.length),true)}</div>`).join('')}</section><section class="card"><h2>知识点评估</h2>${topics.map(t=>{const a=A.topicStats(store.assessment,t.id);return `<div class="review-item"><a href="${topicURL(t)}">${esc(t.title)}</a><span class="assessment-label ${a.status}">${a.correct}/${a.total} · ${a.label}</span></div>`;}).join('')}</section></div>`;}
   function renderBookmarks(){const saved=topics.filter(t=>store.bookmarks.includes(t.id)),qs=questionBank.filter(q=>store.favorites.includes(q.id));return `${heading('我的收藏','把反复思考的概念和题目，放在随时能回来的地方。')}<div class="review-grid"><section class="card"><h2>重点知识点 <span class="badge">${saved.length}</span></h2>${saved.length?saved.map(t=>`<div class="review-item"><a href="${topicURL(t)}">${esc(t.title)}</a><button class="text-link" data-remove-topic="${t.id}">移除</button></div>`).join(''):'<p class="muted spaced small">在知识点详情中点击“收藏知识点”，即可加入这里。</p>'}</section><section class="card"><h2>收藏题目 <span class="badge">${qs.length}</span></h2>${qs.length?qs.map(q=>`<div class="review-item"><a href="#question/${q.id}">${esc(q.topic)} · ${esc(q.prompt).replace(/\$[^$]+\$/g,'…').slice(0,45)}</a><button class="text-link" data-remove-question="${q.id}">移除</button></div>`).join(''):'<p class="muted spaced small">在习题卡片右上角点击“收藏”，方便下次重做。</p>'}${qs.length?'<a class="btn btn-soft spaced" href="#exercises/favorites">练习收藏题目 →</a>':''}</section></div>`;}
   function renderMap(){
     const node=(c,i)=>`<section class="card map-node"><div class="btn-row" style="justify-content:space-between"><h2><span style="color:var(--blue);margin-right:9px">${symbols[i]}</span>${i+1}. ${esc(c.title)}</h2><a class="small" href="#chapter/${c.id}">章节概览 →</a></div><p>${esc(c.subtitle||chapterEnglish[i])}</p><div class="map-topics">${c.topics.map(t=>`<a href="#lesson/${c.id}/${t.id}">${store.mastered[t.id]?'✓ ':''}${esc(t.title)}</a>`).join('')}</div></section>`;
     return `${heading('知识结构','七个章节，一条从时域走向变换域的理解路径。')}<div class="lab-note" style="margin:0 0 22px">先修关系：基础 → 系统性质 → LTI → 傅里叶 → 采样。拉普拉斯与 Z 变换分别延伸连续时间与离散时间的频域分析，两者可以并行学习。</div><div class="map-chain">${chapters.slice(0,5).map((c,i)=>`${i?'<div class="map-arrow" aria-hidden="true">↓</div>':''}${node(c,i)}`).join('')}<div class="map-arrow" aria-hidden="true">↙ &nbsp;&nbsp;&nbsp; ↘</div><div class="small muted">连续时间扩展 / 离散时间扩展（两条并行路径）</div><div class="map-tail">${chapters.slice(5).map((c,i)=>node(c,i+5)).join('')}</div></div>`;
   }
-  function renderAbout(){return `${heading('关于 SignalLab','一个可离线使用、数据保存在你手中的学习工具。')}<div class="about-content"><section class="card"><h2>内容与符号约定</h2><p>本平台以奥本海姆《信号与系统》第二版（中文版）的知识体系为参考，组织原创中文讲解与原创练习。适合本科课程理解与复习；并非教材全文或官方配套产品。</p><ul class="pitfalls spaced">${(COURSE.conventions||[]).map(x=>`<li>${esc(x)}</li>`).join('')}<li>连续时间冲激是广义函数，图上的箭头表示强度；有限高度的脉冲不能当成真正冲激。</li><li>实验室给出参数模型及数值误差范围。有限样本一致不能证明系统对所有输入时不变。</li></ul></section><section class="card"><h2>外观与动态效果</h2><label class="theme-preference-label">主题偏好<select id="themePreference"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></label><p class="assessment-note">自动尊重系统的“减少动态效果”设置。主题切换同步更新公式、SVG 与画布。</p></section><section class="card" id="dataBackup"><h2>数据备份与恢复</h2><p>进度、收藏与错题通过 localStorage 保存在当前浏览器。隐私模式、清理网站数据或移动文件位置可能影响记录。建议定期导出；备份可用于不同设备之间手动迁移。</p><div class="btn-row spaced"><button class="btn btn-primary" id="exportData">导出学习记录 JSON ↓</button><label class="btn upload-label">合并导入学习记录<input id="importData" type="file" accept=".json,application/json"></label></div><p class="inline-info">导入会合并收藏、错题与学习记录；每题保留较新的测评证据；旧自评不计客观正确率。不会上传任何数据。</p><p class="inline-info" id="storageState">当前保存状态：${storageOK?'浏览器本地存储可用':'存储不可用，仅在本次会话保留'}。</p></section><section class="card"><h2>如何离线打开与使用</h2><ol class="pitfalls"><li>保留整个项目目录结构，双击 index.html，在 Edge、Chrome、Firefox 或 Safari 中打开。</li><li>无需安装依赖或启动服务；课程、习题、字体与公式渲染库均在目录内。</li><li>iPad 支持触摸布局；iPadOS 的“文件”快速预览不等于浏览器，若不能执行脚本，请通过支持本地 HTML 的浏览器/阅读工具打开，或使用电脑的局域网静态服务访问。</li><li>通过网页访问 iPad 时，首次打开仍需要能连接静态文件服务；纯本地使用应使用完整离线文件夹。</li></ol></section><section class="card"><h2>参考资料与开源依赖</h2><p>课程结构与关键变换约定对照 MIT OpenCourseWare 的相关公开讲义，站内讲解与题目为原创。</p><ul class="pitfalls spaced">${(COURSE.sources?.length?COURSE.sources:[{title:'MIT OCW · Signals and Systems · Lecture Notes',url:'https://ocw.mit.edu/courses/res-6-007-signals-and-systems-spring-2011/pages/lecture-notes/'}]).map(s=>`<li><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title)} ↗</a></li>`).join('')}<li><a href="https://katex.org/docs/browser" target="_blank" rel="noopener noreferrer">KaTeX 0.16.22</a> · MIT License，字体及许可随项目附带。</li></ul></section></div>`;}
-  function exportData(){const blob=new Blob([JSON.stringify({...store,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`SignalLab-学习记录-${dateKey()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);notify('已导出学习记录。');}
-  async function importData(file){
-    if(!file)return;if(file.size>2e6){notify('文件过大，请选择学习记录 JSON。');return;}
+  function renderAbout(){return `${heading('关于 SignalLab','一个可离线使用、数据保存在你手中的学习工具。')}<div class="about-content"><section class="card"><h2>内容与符号约定</h2><p>本平台以奥本海姆《信号与系统》第二版（中文版）的知识体系为参考，组织原创中文讲解与原创练习。适合本科课程理解与复习；并非教材全文或官方配套产品。</p><ul class="pitfalls spaced">${(COURSE.conventions||[]).map(x=>`<li>${esc(x)}</li>`).join('')}<li>连续时间冲激是广义函数，图上的箭头表示强度；有限高度的脉冲不能当成真正冲激。</li><li>实验室给出参数模型及数值误差范围。有限样本一致不能证明系统对所有输入时不变。</li></ul></section><section class="card"><h2>外观与动态效果</h2><label class="theme-preference-label">主题偏好<select id="themePreference"><option value="system">跟随系统</option><option value="light">浅色</option><option value="dark">深色</option></select></label><p class="assessment-note">自动尊重系统的“减少动态效果”设置。主题切换同步更新公式、SVG 与画布。</p></section><section class="card" id="dataBackup"><h2>数据备份与恢复</h2><p>进度、收藏与错题通过 localStorage 保存在当前浏览器。隐私模式、清理网站数据或移动文件位置可能影响记录。建议定期导出；备份可用于不同设备之间手动迁移。</p><div class="btn-row spaced"><button class="btn btn-primary" id="exportData">导出学习记录 JSON ↓</button><label class="btn upload-label">导入学习记录<input id="importData" type="file" accept=".json,application/json"></label></div><p class="inline-info">备份格式v3包含进度、测评、错题、错因、收藏与延迟重测计划；兼容旧版JSON。导入会先校验，再由你选择合并或覆盖；失败不改原数据，照片不进入备份。</p><p class="inline-info" id="storageState">当前保存状态：${storageOK?'浏览器本地存储可用':'存储不可用，仅在本次会话保留'}。</p></section><section class="card"><h2>如何离线打开与使用</h2><ol class="pitfalls"><li>保留整个项目目录结构，双击 index.html，在 Edge、Chrome、Firefox 或 Safari 中打开。</li><li>无需安装依赖或启动服务；课程、习题、字体与公式渲染库均在目录内。</li><li>iPad 支持触摸布局；iPadOS 的“文件”快速预览不等于浏览器，若不能执行脚本，请通过支持本地 HTML 的浏览器/阅读工具打开，或使用电脑的局域网静态服务访问。</li><li>通过网页访问 iPad 时，首次打开仍需要能连接静态文件服务；纯本地使用应使用完整离线文件夹。</li></ol></section><section class="card"><h2>参考资料与开源依赖</h2><p>课程结构与关键变换约定对照 MIT OpenCourseWare 的相关公开讲义，站内讲解与题目为原创。</p><ul class="pitfalls spaced">${(COURSE.sources?.length?COURSE.sources:[{title:'MIT OCW · Signals and Systems · Lecture Notes',url:'https://ocw.mit.edu/courses/res-6-007-signals-and-systems-spring-2011/pages/lecture-notes/'}]).map(s=>`<li><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title)} ↗</a></li>`).join('')}<li><a href="https://katex.org/docs/browser" target="_blank" rel="noopener noreferrer">KaTeX 0.16.22</a> · MIT License，字体及许可随项目附带。</li></ul></section></div>`;}
+  let pendingLearningImport=null,learningImportSequence=0;
+  function exportData(){
     try{
-      const raw=JSON.parse(await file.text());if(![1,2].includes(raw.version)||!Array.isArray(raw.visited))throw new Error('invalid');
-      const s=sanitize(raw);
-      for(const key of ['visited','bookmarks','favorites','wrong'])store[key]=[...new Set([...store[key],...s[key]])];
-      Object.assign(store.legacyMastered,s.legacyMastered);A.merge(store.assessment,s.assessment);
-      for(const [key,value]of Object.entries(s.attempts))if(!store.attempts[key]||value.at>store.attempts[key].at)store.attempts[key]=value;
-      const wrong=new Set(store.wrong);
-      for(const [id,a]of Object.entries(store.attempts)){if(a.lastCorrect)wrong.delete(id);else wrong.add(id);}
-      store.wrong=[...wrong];
-      for(const [key,value]of Object.entries(s.activity))store.activity[key]=Math.max(store.activity[key]||0,value);
-      store.waveformHistory=[...new Map([...store.waveformHistory,...s.waveformHistory].map(r=>[r.questionId+':'+r.at,r])).values()].sort((a,b)=>a.at-b.at).slice(-80);Object.assign(store.quick,s.quick);persist();render();notify('学习记录已合并。');
-    }catch{notify('导入失败：请使用本平台导出的有效 JSON 文件。');}
+      syncMastery();
+      const data=D.buildBackup(store,{chapterMastery:chapters.map(c=>({chapterId:c.id,...A.chapterStats(store.assessment,c.id,c.topics.length)}))});
+      const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=url;a.download=`SignalLab-学习记录-${dateKey()}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);notify('已导出进度、测评、错题、错因、收藏与复习计划；不包含照片。');
+    }catch(error){notify('导出失败：'+error.message);}
   }
+  function mergedLearningData(current,incoming){
+    const next=sanitize(current);
+    for(const key of ['visited','bookmarks','favorites','wrong'])next[key]=[...new Set([...next[key],...incoming[key]])];
+    Object.assign(next.legacyMastered,incoming.legacyMastered);A.merge(next.assessment,incoming.assessment);
+    for(const [key,value]of Object.entries(incoming.attempts))if(!next.attempts[key]||value.at>next.attempts[key].at)next.attempts[key]=value;
+    const wrong=new Set(next.wrong);for(const [id,a]of Object.entries(next.attempts)){if(a.lastCorrect)wrong.delete(id);else wrong.add(id);}next.wrong=[...wrong];
+    for(const [key,value]of Object.entries(incoming.activity))next.activity[key]=Math.max(next.activity[key]||0,value);
+    next.waveformHistory=[...new Map([...next.waveformHistory,...incoming.waveformHistory].map(r=>[r.questionId+':'+r.at,r])).values()].sort((a,b)=>a.at-b.at).slice(-80);
+    Object.assign(next.quick,incoming.quick);D.merge(next.diagnostics,incoming.diagnostics);return next;
+  }
+  function learningImportDialog(){
+    let dialog=$('#learningImportDialog');if(dialog)return dialog;
+    dialog=document.createElement('dialog');dialog.id='learningImportDialog';dialog.setAttribute('aria-labelledby','learningImportTitle');
+    dialog.innerHTML='<div class="dialog-head"><h2 id="learningImportTitle">确认恢复学习记录</h2><button class="icon-btn" data-import-close aria-label="取消导入">×</button></div><p data-import-summary></p><p class="assessment-note">文件仅在本机校验；确认前不会更改当前记录。掌握度将根据有效题目与最低数量门槛重新计算，不信任手动写入的百分比。</p><fieldset class="spaced"><legend>恢复方式</legend><label class="wave-check"><input type="radio" name="learningImportMode" value="merge" checked>合并：保留当前记录，每题优先较新的测评证据</label><label class="wave-check"><input type="radio" name="learningImportMode" value="replace">覆盖：用备份替换当前学习进度、答题、错因与收藏</label></fieldset><p class="assessment-note">覆盖会替换当前学习记录，请先导出一份当前备份。主题偏好和独立信号库保持当前设置；信号库仍可从表达式编辑器单独备份。</p><p role="status" data-import-status></p><div class="btn-row spaced"><button class="btn btn-primary" data-import-confirm>确认导入</button><button class="btn" data-import-cancel>取消</button></div>';
+    const cancel=()=>{pendingLearningImport=null;learningImportSequence++;dialog.close();};
+    dialog.querySelector('[data-import-close]').onclick=cancel;dialog.querySelector('[data-import-cancel]').onclick=cancel;
+    dialog.addEventListener('cancel',()=>{pendingLearningImport=null;learningImportSequence++;});
+    dialog.querySelector('[data-import-confirm]').onclick=()=>{
+      if(!pendingLearningImport)return;
+      try{
+        const replace=dialog.querySelector('[name=learningImportMode]:checked').value==='replace';
+        const next=replace?sanitize(pendingLearningImport):mergedLearningData(store,pendingLearningImport);
+        next.theme=store.theme;syncMastery(next);
+        // Storage.setItem is atomic: on quota/permission failure the old store
+        // and in-memory state stay intact. Never mutate store before this write.
+        localStorage.setItem(STORE_KEY,JSON.stringify(next));
+        store=next;storageOK=true;pendingLearningImport=null;learningImportSequence++;session=null;answers={};drafts={};dialog.close();render();notify(replace?'已从备份恢复学习记录。':'学习记录已合并。');
+      }catch(error){dialog.querySelector('[data-import-status]').textContent='导入未完成：'+error.message+'。现有记录保持原样。';}
+    };
+    document.body.append(dialog);return dialog;
+  }
+  async function importData(file){
+    if(!file)return;const token=++learningImportSequence;pendingLearningImport=null;
+    try{
+      if(file.size>D.limits.backupBytes)throw new Error('文件超过5MiB。');
+      const parsed=D.parseBackup(await file.text());if(token!==learningImportSequence)return;
+      const incoming=sanitize(parsed.data),dialog=learningImportDialog();pendingLearningImport=incoming;
+      dialog.querySelector('[data-import-summary]').textContent=`已校验${parsed.legacy?'旧版':'格式v'+parsed.formatVersion}备份：${incoming.visited.length}个已浏览知识点、${Object.keys(incoming.assessment.records).length}条客观测评证据、${incoming.wrong.length}道错题、${incoming.diagnostics.events.length}条诊断记录。`;
+      dialog.querySelector('[data-import-status]').textContent='';dialog.querySelector('[value=merge]').checked=true;
+      if(!dialog.open)dialog.showModal();window.SignalIcons.enhance(dialog);
+    }catch(error){notify('导入失败：'+error.message+'；现有记录保持原样。');}
+    finally{if($('#importData'))$('#importData').value='';}
+  }
+
   function renderSearch(){const query=$('#searchInput').value.trim().toLowerCase();if(!query){$('#searchResults').innerHTML='<p class="muted small" style="padding:12px">输入关键词，查找知识点、核心公式与习题。</p>';return;}const ts=topics.filter(t=>[t.title,t.intuition,t.definition,...t.formulas,...t.pitfalls].join(' ').toLowerCase().includes(query));const qs=questionBank.filter(q=>[q.prompt,q.topic,q.idea].join(' ').toLowerCase().includes(query));$('#searchResults').innerHTML=ts.slice(0,12).map(t=>`<a class="search-result" href="${topicURL(t)}"><strong>${esc(t.title)}</strong><small>知识点 · ${esc(t.chapterTitle)}</small></a>`).join('')+qs.slice(0,8).map(q=>`<a class="search-result" href="#question/${q.id}"><strong>${esc(q.topic)} · ${esc(q.prompt).slice(0,100)}</strong><small>习题 · ${esc(chapterOf(q.chapter)?.title)}</small></a>`).join('')||'<p class="muted small" style="padding:12px">没有找到相关内容，请试试更短的关键词。</p>';MathTypeset($('#searchResults'));$$('a',$('#searchResults')).forEach(a=>a.onclick=()=>$('#searchDialog').close());}
   function bindPage(route,params){
     if(route[0]==='lesson')bindLesson(route[2]);
     if(route[0]==='labs'&&currentLab){
-      if(currentPractice)window.LabPractice?.mount(currentLab,$('#labHost'),{familyId:params.get('family')||undefined,seed:params.has('seed')?Number(params.get('seed')):undefined,onGrade:(q,correct,value)=>{
-        const result=A.grade(q,value);A.recordLabResult(store.assessment,{...q,labId:currentLab},result);
+      if(currentPractice)window.LabPractice?.mount(currentLab,$('#labHost'),{onQuestionChange:()=>{DV.destroy();$('[data-lab-diagnosis]')?.remove();},onDestroy:()=>DV.destroy(),familyId:params.get('family')||undefined,seed:params.has('seed')?Number(params.get('seed')):undefined,onGrade:(q,correct,value)=>{
+        const result=A.grade(q,value);A.recordLabResult(store.assessment,{...q,labId:currentLab},result);recordDiagnosis(q,value,result);const feedback=$('[data-practice-feedback]');if(feedback){const host=document.createElement('div');host.dataset.labDiagnosis="";feedback.insertAdjacentElement("afterend",host);DV.mount(host,{question:q,submission:value,result,diagnosis:DE.analyze(q,value,result)});}
         activity();persist();document.dispatchEvent(new CustomEvent('signallab:assessmentchange'));
       },getStats:q=>q?.topicId?A.topicStats(store.assessment,q.topicId):A.stats(store.assessment)});
       else(currentCustom?window.CustomLabs:window.Labs)?.render(currentLab,$('#labHost'));MathTypeset($('#labHost'));
@@ -248,13 +310,14 @@
     $$('[data-remove-topic]').forEach(b=>b.onclick=()=>{toggleId(store.bookmarks,b.dataset.removeTopic);persist();render();});
     $$('[data-remove-question]').forEach(b=>b.onclick=()=>{toggleId(store.favorites,b.dataset.removeQuestion);persist();render();});
     $('#themePreference')?.addEventListener('change',e=>window.SignalTheme.setPreference(e.target.value));window.SignalTheme?.refresh();UI.mountPlots($('#main'));
+    $('[data-diagnosis-filter]')?.addEventListener('change',e=>{location.hash='diagnostics'+(e.target.value?'?error='+encodeURIComponent(e.target.value):'');});
     $('#exportData')?.addEventListener('click',exportData);
     $('#importData')?.addEventListener('change',e=>importData(e.target.files[0]));
   }
   function setMenu(open){$('#sidebar').classList.toggle('open',open);$('#scrim').classList.toggle('open',open);const button=$('#menuToggle');button.setAttribute('aria-expanded',String(open));button.setAttribute('aria-label',open?'关闭导航':'打开导航');window.SignalIcons.button(button,open?'close':'menu','',{animate:true});}
   function closeMenu(){setMenu(false);}
   function render(){
-    window.SignalIcons.destroy($('#main'));window.SignalIcons.destroy($('#sidebar'));clearInterval(examTimer);UI.destroyPlots();window.PhotoWaveform?.destroy();window.LabPractice?.destroy();window.Labs?.destroy();window.CustomLabs?.destroy();currentLab=null;currentCustom=false;currentPractice=false;
+    window.SignalIcons.destroy($('#main'));window.SignalIcons.destroy($('#sidebar'));clearInterval(examTimer);UI.destroyPlots();DV.destroy();window.PhotoWaveform?.destroy();window.LabPractice?.destroy();window.Labs?.destroy();window.CustomLabs?.destroy();currentLab=null;currentCustom=false;currentPractice=false;
     const hash=location.hash.slice(1)||'home';const [path,query='']=hash.split('?');const route=path.split('/'),params=new URLSearchParams(query);
     syncMastery();renderSidebar(route);closeMenu();window.SignalTheme?.refresh();
     let html;switch(route[0]){
@@ -267,6 +330,7 @@
       case 'exercises':html=renderExercises(params,route[1]);break;
       case 'question':session=null;answers={};qIndex=0;pool=questionBank.filter(q=>q.id===route[1]);html=heading('习题练习','独立作答后，查看详细解析。')+'<div id="exerciseArea"></div>';break;
       case 'formulas':html=renderFormulas(params);break;
+      case 'diagnostics':html=renderDiagnostics(params);break;
       case 'review':html=renderReview();break;
       case 'bookmarks':html=renderBookmarks();break;
       case 'map':html=renderMap();break;
@@ -274,7 +338,7 @@
       default:html=empty('这里暂时没有内容','请通过导航打开课程或实验室。');
     }
     $('#main').innerHTML=html;$('#main').classList.remove('fade-in');void $('#main').offsetWidth;$('#main').classList.add('fade-in');
-    const title=({home:'学习概览',chapter:chapterOf(route[1])?.title,lesson:findTopic(route[2])?.title,labs:labInfo.find(l=>l.id===route[1])?.name||'交互实验室',exercises:'习题中心',question:'习题练习',formulas:'公式速查',review:'复习计划',bookmarks:'我的收藏',map:'知识结构',about:'项目说明','signal-guide':'自定义信号指南','photo-waveforms':'拍照绘图练习'})[route[0]]||'学习空间';
+    const title=({home:'学习概览',chapter:chapterOf(route[1])?.title,lesson:findTopic(route[2])?.title,labs:labInfo.find(l=>l.id===route[1])?.name||'交互实验室',exercises:'习题中心',question:'习题练习',formulas:'公式速查',review:'复习计划',diagnostics:'薄弱知识点诊断中心',bookmarks:'我的收藏',map:'知识结构',about:'项目说明','signal-guide':'自定义信号指南','photo-waveforms':'拍照绘图练习'})[route[0]]||'学习空间';
     $('#breadcrumb').innerHTML=`学习空间 <span>/</span> ${esc(title)}`;document.title=`${title} · SignalLab 信号与系统`;
     bindPage(route,params);MathTypeset($('#main'));window.SignalIcons.enhance(document);$('#storageWarning').hidden=storageOK;
   }
@@ -291,5 +355,5 @@
   window.ThemeSwitch?.mount();
   persist();render();
   // Expose read-only snapshots for reproducible offline QA, never used as application state.
-  window.SignalLab={getState:()=>JSON.parse(JSON.stringify(store)),counts:()=>({topics:topics.length,questions:questionBank.length,chapters:chapters.length}),getAssessmentStats:id=>id?A.topicStats(store.assessment,id):A.stats(store.assessment),getQuestionCatalog:()=>questionBank.map(q=>({...q})),contentCounts:()=>({examples:45+Object.values(window.WORKED_EXAMPLES?.byTopic||{}).reduce((n,a)=>n+a.length,0)+Object.values(window.WORKED_EXAMPLES?.byChapter||{}).reduce((n,a)=>n+a.length,0),labFamilies:familyCatalog.length,objectiveQuestions:questionBank.filter(A.isObjective).length}),version:'3.2.0-beta.1'};
+  window.SignalLab={getState:()=>JSON.parse(JSON.stringify(store)),counts:()=>({topics:topics.length,questions:questionBank.length,chapters:chapters.length}),getAssessmentStats:id=>id?A.topicStats(store.assessment,id):A.stats(store.assessment),getQuestionCatalog:()=>questionBank.map(q=>({...q})),contentCounts:()=>({examples:45+Object.values(window.WORKED_EXAMPLES?.byTopic||{}).reduce((n,a)=>n+a.length,0)+Object.values(window.WORKED_EXAMPLES?.byChapter||{}).reduce((n,a)=>n+a.length,0),labFamilies:familyCatalog.length,objectiveQuestions:questionBank.filter(A.isObjective).length}),version:'0.3.0-beta'};
 })();
