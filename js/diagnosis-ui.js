@@ -40,7 +40,10 @@
     if(model.domain!=='ct')return [];
     const evaluate=x=>window.WaveformMath.evaluate(model,x),map=new Map();
     for(const s of model.segments){for(const [x,y]of [[s.start,s.y0],[s.end,s.y1]]){const value=evaluate(x),closed=Math.abs(value-y)<=Number.EPSILON*32*Math.max(1,Math.abs(value),Math.abs(y));map.set(x+':'+y+':'+closed,{x,y,closed});map.set(x+':actual',{x,y:value,closed:true});}}
-    for(const p of model.endpoints)map.set(p.at+':actual',{x:p.at,y:p.value,closed:true});
+    for(const p of model.endpoints){
+      for(const s of model.segments)if(p.at>s.start&&p.at<s.end){const y=s.y0+(s.y1-s.y0)*((p.at-s.start)/(s.end-s.start));map.set(p.at+':limit',{x:p.at,y,closed:p.value===y});}
+      map.set(p.at+':actual',{x:p.at,y:p.value,closed:true});
+    }
     return [...map.values()];
   }
   function palette(){return document.documentElement.dataset.theme==='dark'?{original:'#8ab4ff',student:'#ffbe70',standard:'#73d9b5',step:'#c6a6ff'}:{original:'#2563eb',student:'#b86a13',standard:'#128058',step:'#7c48c5'};}

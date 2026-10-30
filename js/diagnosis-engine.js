@@ -130,7 +130,7 @@
     return [];
   }
   function recommendations(errorIds,q){
-    const bank=global.DiagnosisBank?.questions||[],ids=new Set(errorIds),preferred=bank.filter(p=>p.id!==q?.id&&(p.diagnosis?.errorTypeIds||[]).some(id=>ids.has(id))),sameTopic=bank.filter(p=>p.id!==q?.id&&p.topicId===q?.topicId),seen=new Set();
+    const bank=[...(global.DiagnosisBank?.questions||[]),...(global.WaveformEditorQuestions||[]),...(global.WaveformQuestions||[])],ids=new Set(errorIds),preferred=bank.filter(p=>p.id!==q?.id&&(p.diagnosis?.errorTypeIds||[]).some(id=>ids.has(id))),sameTopic=bank.filter(p=>p.id!==q?.id&&p.topicId===q?.topicId),seen=new Set();
     return [...preferred.sort((a,b)=>a.difficulty-b.difficulty),...sameTopic.sort((a,b)=>a.difficulty-b.difficulty)].filter(p=>{if(seen.has(p.id))return false;seen.add(p.id);return true;}).slice(0,6).map(p=>({questionId:p.id,title:p.title||p.prompt,topicId:p.topicId,difficulty:p.difficulty}));
   }
   function relatedExamples(q){

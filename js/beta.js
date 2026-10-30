@@ -3,7 +3,7 @@
   'use strict';
   const repository='https://github.com/rielle2/signals-and-systems-lab';
   const configured=/^https:\/\/github\.com\/[a-zA-Z0-9-]+\/[a-zA-Z0-9_.-]+$/.test(repository);
-  const version='0.3.0-beta';
+  const version='0.4.0-beta';
   const issueURL=configured?repository+'/issues/new?template=bug_report.yml&title=%5BBeta%5D%20':'';
   const header=document.querySelector('.topbar-actions');
   if(!header)return;

@@ -179,6 +179,9 @@
     return compile(source,{domain});
   }
   function known(signal){if(!internals.has(signal))fail('请使用 SignalEngine.compile/piecewise 创建信号');return internals.get(signal);}
+  // Read-only syntax description for exact finite-waveform certification.
+  // Callers receive a clone, never the parser's internal nodes or executable code.
+  function inspect(signal){const {ast}=known(signal);return {ast:JSON.parse(JSON.stringify(ast))};}
   function stringAST(n,variable){
     if(n.type==='number')return `(${n.value})`;if(n.type==='var')return variable;
     if(n.type==='unary')return `(${n.op}${stringAST(n.arg,variable)})`;
@@ -303,5 +306,5 @@
     }
     return tex(ast);
   }
-  global.SignalEngine=Object.freeze({compile,piecewise,transform,convolve,convolutionImpulses,spectrum,toLatex,SignalError,limits:Object.freeze(LIMIT)});
+  global.SignalEngine=Object.freeze({compile,piecewise,transform,convolve,convolutionImpulses,spectrum,toLatex,inspect,SignalError,limits:Object.freeze(LIMIT)});
 })(typeof window!=='undefined'?window:globalThis);

@@ -13,7 +13,7 @@
   const domainOf = value => value === 'dt' ? 'dt' : 'ct';
   function compile(source, domain) {
     if (typeof source !== 'string' || source.length > MAX_SOURCE) throw new Error(`表达式最多 ${MAX_SOURCE} 个字符。`);
-    return engine().compile(source, { domain: domainOf(domain) });
+    return engine().compile(window.WaveformExpressions?window.WaveformExpressions.normalizeSource(source,domainOf(domain)):source, { domain: domainOf(domain) });
   }
   function normalizeItem(value) {
     if (!value || typeof value !== 'object' || !['ct','dt'].includes(value.domain) || typeof value.source !== 'string' || typeof value.name !== 'string') throw new Error('每个信号须包含名称、ct/dt 类型和文本表达式。');
@@ -35,7 +35,7 @@
   function mountEditor(container, options = {}) {
     if (!container || !container.appendChild) throw new Error('SignalEditor 需要 DOM 容器。');
     const uid = `signal-editor-${++editorSerial}`;
-    let destroyed=false, signal=null, domain=domainOf(options.domain), library=readLibrary(), selectedId='', objectUrls=[];
+    let destroyed=false, signal=null, domain=domainOf(options.domain), library=readLibrary(), selectedId='', objectUrls=[], workbench=null;
     const lockedDomain=options.lockDomain?domain:null;
     const node=document.createElement('section'); node.className='signal-editor'; node.setAttribute('aria-label','自定义信号编辑器');
     node.innerHTML=`<div class="sge-heading"><strong>自定义信号</strong><label>时间类型<select data-signal-domain aria-label="信号时间类型"><option value="ct">连续时间 CT · t</option><option value="dt">离散时间 DT · n</option></select></label></div>
@@ -43,13 +43,15 @@
       <textarea id="${uid}-source" data-signal-source spellcheck="false" autocapitalize="off" autocomplete="off" rows="3" aria-describedby="${uid}-syntax ${uid}-status"></textarea>
       <div class="sge-shortcuts" aria-label="插入数学符号"></div>
       <div class="sge-actions"><button type="button" class="btn btn-primary" data-signal-apply>应用信号</button><label>载入例子<select data-signal-example aria-label="载入信号例子"></select></label></div>
-      <p class="sge-help" id="${uid}-syntax">支持 + − * / ^、括号、pi、e、sin、cos、exp、abs、u、delta，以及 where(条件,成立值,否则值)。乘法请写 *；条件可用 &lt;、&lt;=、&gt;=、&amp;&amp;。</p>
+      <p class="sge-help" id="${uid}-syntax">支持 + − * / ^、括号、pi、e、sin、cos、exp、abs、u、delta，以及 where(条件,成立值,否则值)。支持 x(t)=、x[n]=、π/δ 及常见省略乘号；复杂乘法仍建议写 *。条件可用 &lt;、&lt;=、&gt;=、&amp;&amp;。</p>
       <div class="sge-status" id="${uid}-status" data-signal-status role="status" aria-live="polite"></div>
       <div class="sge-preview"><span>已应用表达式</span><div data-signal-math class="sge-math"></div><code data-signal-preview></code><small data-signal-details></small></div>
       <details class="sge-piecewise"><summary>分段信号编辑器</summary><p class="sge-help">按行从上到下匹配，第一个成立条件生效；其他位置默认 0。条件中的变量须与 CT/DT 一致。</p><div data-piecewise-rows></div><div class="sge-actions"><button type="button" class="btn" data-piecewise-add>＋ 添加分段</button><button type="button" class="btn btn-soft" data-piecewise-apply>应用分段信号</button><span class="sge-help">默认分支：0</span></div></details>
+      <details class="sge-workbench"><summary>波形与公式双向编辑</summary><p class="sge-help">精确的有限分段信号可拖动编辑。修改后点击“应用到当前信号”；复杂函数保留原公式绘图。</p><div data-signal-workbench></div></details>
       <details class="sge-library"><summary>我的信号库 · 在各实验间复用</summary><div class="sge-library-save"><label>信号名称<input data-signal-name maxlength="80" placeholder="例如：单边衰减信号" aria-label="保存的信号名称"></label><button type="button" class="btn" data-signal-save>保存已应用信号</button></div><label class="sge-library-select">已保存信号<select data-signal-library aria-label="已保存信号"><option value="">请选择</option></select></label><div class="sge-actions"><button type="button" class="btn" data-signal-load>载入</button><button type="button" class="btn" data-signal-favorite aria-pressed="false">☆ 收藏</button><button type="button" class="btn" data-signal-rename>修改名称</button><button type="button" class="btn" data-signal-delete>删除选中信号</button></div><div class="sge-actions"><button type="button" class="btn" data-signal-export>导出信号库</button><label class="btn sge-import">导入信号库<input type="file" data-signal-import accept="application/json,.json"></label></div><p class="sge-help" data-library-status aria-live="polite">仅保存信号定义，不保存可执行代码。最多 ${MAX_ITEMS} 项；导入文件最多 256 KB。</p></details>`;
     container.appendChild(node);
     const $ = selector => node.querySelector(selector), source=$('[data-signal-source]'), domainSelect=$('[data-signal-domain]'), status=$('[data-signal-status]'), rows=$('[data-piecewise-rows]'), librarySelect=$('[data-signal-library]'), nameInput=$('[data-signal-name]');
+    let usingWorkbench=false;
     const notify = (message, bad=false) => { status.textContent=message; status.classList.toggle('is-error',bad); source.setAttribute('aria-invalid',String(bad)); };
     const libraryStatus=(message,bad=false)=>{const el=$('[data-library-status]');el.textContent=message;el.classList.toggle('is-error',bad);};
     function examples() {
@@ -82,6 +84,7 @@
       signal=candidate;domain=domainOf(newDomain);domainSelect.value=domain;
       if(updateDraft)source.value=signal.source;
       updateTools();updatePreview();if(report)notify('信号已应用。绘图与计算使用上述有效定义。');
+      if(workbench&&!usingWorkbench)workbench.setSource(signal.source,domain);
       if(typeof options.onChange==='function')options.onChange(signal);
       return signal;
     }
@@ -146,13 +149,20 @@
     }
     function onInput(event){if(event.target===source)notify('表达式待应用；实验仍使用上一次有效信号。');}
     const storageHandler=event=>{if(!event.key||event.key===KEY)refreshLibrary();};
+    const workbenchDetails=$('.sge-workbench');
+    function openWorkbench(){
+      if(!workbenchDetails.open||workbench||destroyed)return;
+      if(!window.WaveformWorkbench){notify('双向编辑器模块尚未加载，请保留完整项目目录。',true);return;}
+      workbench=window.WaveformWorkbench.mount($('[data-signal-workbench]'),{domain,source:signal?.source||source.value,lockDomain:!!lockedDomain,onUse(value){usingWorkbench=true;try{commit(value.source,value.domain);}finally{usingWorkbench=false;}}});
+    }
+    workbenchDetails.addEventListener('toggle',openWorkbench);
     node.addEventListener('click',handleClick);node.addEventListener('change',handleChange);node.addEventListener('input',onInput);
     window.addEventListener('storage',storageHandler);window.addEventListener('signallab:signals-changed',refreshLibrary);
     domainSelect.value=domain;domainSelect.disabled=!!lockedDomain;if(lockedDomain)domainSelect.title='时间类型由实验顶部统一控制';source.value=options.source||(domain==='ct'?'sin(2*pi*t)':'0.8^n*u(n)');
     updateTools();addRow(domain==='ct'?'t>=0 && t<1':'n>=0 && n<3',domain==='ct'?'t':'n');addRow(domain==='ct'?'t>=1 && t<2':'n>=3 && n<5',domain==='ct'?'2-t':'5-n');renderLibrary();
     if(library.error)libraryStatus(library.error,true);
     commit(source.value,domain);window.SignalIcons?.enhance(node);
-    return { getSignal:()=>signal,getSource:()=>signal?.source||'',setSignal:(text,newDomain=domainSelect.value)=>{if(destroyed)return null;if(lockedDomain&&domainOf(newDomain)!==lockedDomain){notify('时间类型不匹配：请先切换实验顶部时间类型，再载入此信号。当前信号保持不变。',true);return null;}source.value=String(text);domainSelect.value=domainOf(newDomain);return commit(String(text),domainSelect.value);},destroy(){if(destroyed)return;destroyed=true;window.SignalIcons?.destroy(node);window.removeEventListener('storage',storageHandler);window.removeEventListener('signallab:signals-changed',refreshLibrary);node.removeEventListener('click',handleClick);node.removeEventListener('change',handleChange);node.removeEventListener('input',onInput);objectUrls.forEach(url=>URL.revokeObjectURL(url));node.remove();} };
+    return { getSignal:()=>signal,getSource:()=>signal?.source||'',setSignal:(text,newDomain=domainSelect.value)=>{if(destroyed)return null;if(lockedDomain&&domainOf(newDomain)!==lockedDomain){notify('时间类型不匹配：请先切换实验顶部时间类型，再载入此信号。当前信号保持不变。',true);return null;}source.value=String(text);domainSelect.value=domainOf(newDomain);return commit(String(text),domainSelect.value);},destroy(){if(destroyed)return;destroyed=true;workbench?.destroy();workbenchDetails.removeEventListener('toggle',openWorkbench);window.SignalIcons?.destroy(node);window.removeEventListener('storage',storageHandler);window.removeEventListener('signallab:signals-changed',refreshLibrary);node.removeEventListener('click',handleClick);node.removeEventListener('change',handleChange);node.removeEventListener('input',onInput);objectUrls.forEach(url=>URL.revokeObjectURL(url));node.remove();} };
   }
 
   /* Plot: bounded evaluation, CT discontinuity gaps, DT stems and separate atoms. */
@@ -231,5 +241,16 @@
     return {setSeries,setRange,setHighlights,getRange:()=>({...range}),setDomain(next){domain=domainOf(next);queue();},setXLabel(label){xlabel=String(label).slice(0,80);queue();},destroy(){if(destroyed)return;destroyed=true;window.SignalIcons?.destroy(node);if(frame)cancelAnimationFrame(frame);resize?.disconnect();theme?.disconnect();window.removeEventListener('resize',queue);document.removeEventListener('signallab:themechange',themePaint);canvas.removeEventListener('wheel',wheel);canvas.removeEventListener('pointerdown',pointerDown);canvas.removeEventListener('pointermove',pointerMove);canvas.removeEventListener('pointerup',pointerUp);canvas.removeEventListener('pointercancel',pointerUp);canvas.removeEventListener('lostpointercapture',pointerUp);canvas.removeEventListener('keydown',keydown);node.remove();},getDiagnostics:()=>({nonfinite:lastNonfinite,evaluations:lastEvaluations,series:series.length,evaluationLimit:MAX_EVAL,draws:drawCount,themeRepaints,functionEvaluations:lastFunctionEvaluations,cacheHits:lastCacheHits,exactSegments:series.reduce((n,s)=>n+s.exactSegments.length,0),highlightRegions:highlights.length})};
   }
   window.SignalEditor={mount:mountEditor,storageKey:KEY};
+  // Shared finite/symbolic editor saves through the existing library contract.
+  // Refuse corrupt/full storage instead of replacing the student's collection.
+  window.SignalLibrary=Object.freeze({list:()=>readLibrary().items.map(v=>({...v})),save(value){
+    const library=readLibrary();if(library.error)throw new Error(library.error);
+    const item=normalizeItem(value);item.source=compile(item.source,item.domain).source;
+    const old=library.items.find(v=>v.source===item.source&&v.domain===item.domain);
+    if(old){old.name=item.name;old.favorite=old.favorite||item.favorite;}else library.items.push(item);
+    if(library.items.length>MAX_ITEMS)throw new Error('信号库最多60项，请先整理已有信号。');
+    const encoded=JSON.stringify({version:1,signals:library.items});if(encoded.length>MAX_IMPORT)throw new Error('信号库超出256KB，未保存。');
+    localStorage.setItem(KEY,encoded);window.dispatchEvent(new Event('signallab:signals-changed'));return {...(old||item)};
+  }});
   window.SignalPlot={mount:mountPlot};
 }());
