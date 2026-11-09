@@ -1,0 +1,377 @@
+@charset "UTF-8";
+/* Engineering Notebook tokens from CLAUDE_LESSON_DIRECTION.md.
+ * The existing interface still uses its original tokens in classic mode. */
+:is(body.cl-preview,body.cl-notebook) {
+  --cl-paper:#f2eee4;--cl-sheet:#faf8f2;--cl-paper-2:#e9e3d5;
+  --cl-ink:#1c1e23;--cl-ink-2:#4f5560;--cl-ink-3:#686d76;
+  --cl-rule:#d6cebd;--cl-mark:#b8371f;--cl-mark-soft:rgb(184 55 31 / .08);
+  --cl-grid:rgb(28 30 35 / .05);--cl-grid-major:rgb(28 30 35 / .1);
+  --cl-ok:#1d7347;--cl-bad:#b3261e;
+  --cl-sans:"Microsoft YaHei UI","Microsoft YaHei","PingFang SC","Noto Sans SC","Segoe UI",sans-serif;
+  --cl-serif:"Noto Serif SC","Source Han Serif SC","Songti SC","STSong","SimSun",serif;
+  --cl-num:"KaTeX_Main","Cambria Math","Times New Roman",serif;
+  --cl-top:60px;
+  --cl-grid-lines:
+    linear-gradient(var(--cl-grid-major) 1px,transparent 1px),
+    linear-gradient(90deg,var(--cl-grid-major) 1px,transparent 1px),
+    linear-gradient(var(--cl-grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--cl-grid) 1px,transparent 1px);
+  --bg:var(--cl-paper);--surface:var(--cl-sheet);--surface2:var(--cl-paper-2);
+  --text:var(--cl-ink);--muted:var(--cl-ink-2);--border:var(--cl-rule);
+  --blue:#2746a6;--blue-dark:#1b3480;--blue-soft:rgb(39 70 166 / .09);
+  --teal:#13786b;--green:var(--cl-ok);--red:var(--cl-bad);--orange:#a85a12;
+  --success-ink:var(--cl-ok);--error-ink:var(--cl-bad);
+  --success-soft:rgb(29 115 71 / .08);--error-soft:rgb(179 38 30 / .07);
+  --shadow:none;--radius:6px;
+  background:var(--cl-paper);
+  color:var(--cl-ink);
+  font-family:var(--cl-sans);
+}
+:root[data-theme=dark] :is(body.cl-preview,body.cl-notebook) {
+  --cl-paper:#121513;--cl-sheet:#181c1a;--cl-paper-2:#1f2421;
+  --cl-ink:#ece8dc;--cl-ink-2:#b0b4aa;--cl-ink-3:#979c92;
+  --cl-rule:#313833;--cl-mark:#ff8a6b;--cl-mark-soft:rgb(255 138 107 / .1);
+  --cl-grid:rgb(236 232 220 / .04);--cl-grid-major:rgb(236 232 220 / .085);
+  --cl-ok:#7fd3a0;--cl-bad:#ff9a8f;
+  --blue:#9db5ff;--blue-dark:#c2d1ff;--blue-soft:rgb(157 181 255 / .12);
+  --teal:#6fd0bd;--orange:#f0b46a;
+  --success-soft:rgb(127 211 160 / .09);--error-soft:rgb(255 154 143 / .08);
+}
+
+/* Shared non-lesson chrome and controls. The lesson keeps its own masthead and drawer. */
+body.cl-notebook:not(.cl-preview) {
+  --focus-ring:2px solid var(--cl-mark);
+  --radius-outer:4px;--radius-inner:4px;--radius-control:4px;
+}
+body.cl-notebook:not(.cl-preview) :focus-visible {
+  outline:var(--focus-ring);
+  outline-offset:3px;
+}
+body.cl-notebook:not(.cl-preview) .topbar {
+  background:var(--cl-paper);
+  border-bottom:1px solid var(--cl-rule);
+}
+body.cl-notebook:not(.cl-preview) .sidebar,
+body.cl-notebook:not(.cl-preview) #searchDialog {
+  background:var(--cl-sheet);
+  border-color:var(--cl-rule);
+}
+body.cl-notebook:not(.cl-preview) :is(.nav-link,.chapter-nav a,.chapter-nav summary) {
+  border-radius:4px;
+}
+body.cl-notebook:not(.cl-preview) :is(.nav-link,.chapter-nav a).active {
+  color:var(--cl-ink);
+  background:var(--cl-paper-2);
+  box-shadow:inset 2px 0 var(--cl-mark);
+}
+body.cl-notebook:not(.cl-preview) .chapter-num {
+  color:var(--cl-ink-2);
+  background:transparent;
+  border:1px solid var(--cl-rule);
+  font:400 14px var(--cl-num);
+}
+body.cl-notebook:not(.cl-preview) main {max-width:1240px}
+body.cl-notebook:not(.cl-preview) .page-heading {
+  padding-bottom:20px;
+  border-bottom:1px solid var(--cl-ink);
+}
+body.cl-notebook:not(.cl-preview) .page-heading h1 {
+  font:400 44px/1.25 var(--cl-serif);
+  letter-spacing:.04em;
+  overflow-wrap:anywhere;
+}
+body.cl-notebook:not(.cl-preview) main :is(.section-title h2,.card > h2,.card > header h2) {
+  font-family:var(--cl-serif);
+  font-weight:400;
+}
+body.cl-notebook:not(.cl-preview) main .card {
+  background:var(--cl-sheet);
+  border-color:var(--cl-rule);
+  border-radius:4px;
+  box-shadow:none;
+}
+body.cl-notebook:not(.cl-preview) main .btn {
+  border-radius:4px;
+  box-shadow:none;
+}
+body.cl-notebook:not(.cl-preview) main .btn-primary {
+  background:var(--cl-ink);
+  color:var(--cl-paper);
+  border-color:var(--cl-ink);
+}
+body.cl-notebook:not(.cl-preview) main .btn-primary:hover:not(:disabled) {
+  background:color-mix(in srgb,var(--cl-ink) 86%,var(--cl-mark));
+}
+body.cl-notebook:not(.cl-preview) main .btn-soft {
+  color:var(--cl-ink);
+  background:var(--cl-paper-2);
+  border-color:var(--cl-rule);
+}
+body.cl-notebook:not(.cl-preview) main .badge:not(.orange,.red) {
+  color:var(--cl-ink-2);
+  background:transparent;
+  border:1px solid var(--cl-rule);
+  border-radius:3px;
+}
+body.cl-notebook:not(.cl-preview) main :is(.chapter-banner,.formula-card) .formula-box {
+  --scroll-bg:var(--cl-sheet);
+  border:0;
+  border-top:2px solid var(--cl-ink);
+  border-bottom:1px solid var(--cl-ink);
+  border-radius:0;
+  background:var(--cl-sheet);
+}
+
+/* Course index, chapter examples and formula sheets. */
+body.cl-notebook main .chapter-banner.card {
+  border-inline:0;
+  border-top:2px solid var(--cl-ink);
+  border-radius:0;
+}
+body.cl-notebook .chapter-banner .eyebrow {display:none}
+body.cl-notebook .topic-list {
+  gap:0;
+  border-top:1px solid var(--cl-rule);
+}
+body.cl-notebook main .topic-list .topic-row {
+  min-height:56px;
+  padding:14px 8px;
+  border:0;
+  border-bottom:1px solid var(--cl-rule);
+  border-radius:0;
+  background:transparent;
+}
+body.cl-notebook .topic-list .topic-row:hover {background:var(--cl-sheet)}
+body.cl-notebook .topic-number {
+  color:var(--cl-mark);
+  background:transparent;
+  font:400 18px var(--cl-num);
+}
+body.cl-notebook main .topic-list + section.card {
+  background:transparent;
+  border-inline:0;
+  border-radius:0;
+}
+body.cl-notebook .topic-list + section .worked-example {
+  --scroll-bg:var(--cl-sheet);
+  background:var(--cl-sheet);
+  border:1px solid var(--cl-rule);
+  border-top:2px solid var(--cl-ink);
+  border-radius:4px;
+  box-shadow:none;
+}
+body.cl-notebook .map-node .map-topics {border-color:var(--cl-rule)}
+
+/* Learning workspaces use the same ruled tabs as the lesson masthead. */
+body.cl-notebook main .lp-switcher:not(.cl-tracks) {
+  padding:0 0 8px;
+  border:0;
+  border-bottom:1px solid var(--cl-rule);
+  border-radius:0;
+  background:transparent;
+}
+body.cl-notebook .lp-switcher:not(.cl-tracks) .lp-track-nav a {
+  color:var(--cl-ink-2);
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+body.cl-notebook .lp-switcher:not(.cl-tracks) .lp-track-nav a:hover {color:var(--cl-ink)}
+body.cl-notebook .lp-switcher:not(.cl-tracks) .lp-track-nav a.is-active {
+  color:var(--cl-ink);
+  font-weight:600;
+  box-shadow:inset 0 -2px var(--cl-mark);
+}
+body.cl-notebook main .hero {
+  color:var(--cl-ink);
+  background:var(--cl-sheet);
+  border-color:var(--cl-rule);
+  border-top:2px solid var(--cl-ink);
+  border-radius:4px;
+  box-shadow:none;
+}
+body.cl-notebook .hero-context .hero-context-dot {background:var(--cl-mark)}
+body.cl-notebook .hero h2 {font:400 32px/1.35 var(--cl-serif)}
+body.cl-notebook .hero .btn {min-height:44px}
+body.cl-notebook .hero-wave {
+  top:22px;
+  right:22px;
+  bottom:22px;
+  display:grid;
+  align-items:center;
+  width:35%;
+  height:auto;
+  opacity:1;
+  border:1px solid var(--cl-rule);
+  background-color:var(--cl-paper);
+  background-image:var(--cl-grid-lines);
+  background-size:40px 40px,40px 40px,8px 8px,8px 8px;
+}
+body.cl-notebook .hero-wave svg {height:auto}
+body.cl-notebook main :is(.today-card,.lp-panel-summary,.lp-primary-action > .lp-action) {
+  border-top:2px solid var(--cl-ink);
+}
+body.cl-notebook main .lp-path-card.is-current {
+  border-top:2px solid var(--cl-mark);
+}
+body.cl-notebook :is(.lp-order,.lp-chapter-order) {
+  color:var(--cl-mark);
+  font:400 16px var(--cl-num);
+}
+body.cl-notebook :is(.lp-card-head h3,.lp-action h3,.today-card h3) {
+  font-family:var(--cl-serif);
+  font-weight:400;
+}
+body.cl-notebook :is(.stat strong,.lp-stat-list dd) {
+  font-family:var(--cl-num);
+  font-weight:400;
+}
+body.cl-notebook .lp-primary-action .lp-action-label {
+  color:var(--cl-ink);
+  background:var(--cl-paper-2);
+  border-color:var(--cl-rule);
+}
+body.cl-notebook main :is(.lp-action,.chapter-card,.topic-row):hover {
+  box-shadow:none;
+  transform:none;
+}
+
+/* Exercise sheets preserve the existing answer controls and grading states. */
+body.cl-notebook main .question-card {
+  border-top:2px solid var(--cl-ink);
+  --scroll-bg:var(--cl-sheet);
+}
+body.cl-notebook :is(.question-card .question-top,.solution) {
+  border-bottom-color:var(--cl-rule);
+}
+body.cl-notebook .solution {
+  --scroll-bg:var(--cl-sheet);
+  border-top:2px solid var(--cl-ink);
+}
+body.cl-notebook .solution h3 {
+  font-family:var(--cl-serif);
+  font-size:18px;
+  font-weight:400;
+}
+body.cl-notebook .solution summary {color:var(--cl-ink)}
+body.cl-notebook .solution summary:hover {background:var(--cl-mark-soft)}
+body.cl-notebook .solution details[open]>summary {color:var(--cl-mark)}
+body.cl-notebook .question-card .feedback {border-radius:0}
+body.cl-notebook .question-card .option {border-radius:4px}
+body.cl-notebook .question-card .option-letter {
+  border-radius:50%;
+  font-family:var(--cl-num);
+}
+body.cl-notebook .question-card .option:is(.selected,[aria-pressed=true]):not(.correct,.incorrect) {
+  border-color:var(--cl-ink);
+  background:var(--cl-paper);
+  box-shadow:inset 0 0 0 1px var(--cl-ink);
+}
+body.cl-notebook .question-card .option:is(.selected,[aria-pressed=true]):not(.correct,.incorrect) .option-letter {
+  border-color:var(--cl-ink);
+  background:var(--cl-ink);
+  color:var(--cl-paper);
+}
+body.cl-notebook :is(.session-banner,.filters-panel) {border-radius:4px}
+
+/* Experiment plates frame the existing SVG and Canvas plots. */
+body.cl-notebook main[data-notebook-page=labs] > .card:not(.empty) {
+  --blue-soft:var(--cl-sheet);
+  border-top:2px solid var(--cl-ink);
+}
+body.cl-notebook main[data-notebook-page=labs] > .card > .eyebrow {display:none}
+body.cl-notebook .lab-page .lab-tabs {
+  border-bottom:1px solid var(--cl-rule);
+  border-radius:0;
+}
+body.cl-notebook .lab-page .lab-tabs a {
+  color:var(--cl-ink-2);
+  border:0;
+  border-radius:0;
+  background:transparent;
+}
+body.cl-notebook .lab-page .lab-tabs a[aria-current=page] {
+  color:var(--cl-ink);
+  font-weight:600;
+  box-shadow:inset 0 -2px var(--cl-mark);
+}
+body.cl-notebook .lab-mode-bar .mode-switch {
+  gap:0;
+  padding:0;
+  border:1px solid var(--cl-ink);
+  border-radius:4px;
+  background:transparent;
+}
+body.cl-notebook .lab-mode-bar .mode-switch button {
+  color:var(--cl-ink);
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+body.cl-notebook .lab-mode-bar .mode-switch button + button {
+  border-left:1px solid var(--cl-ink);
+}
+body.cl-notebook .lab-mode-bar .mode-switch button.active {
+  color:var(--cl-paper);
+  background:var(--cl-ink);
+}
+body.cl-notebook:not(.cl-preview) main :is(.lab-card-preview,.lab-plot,.signal-plot,.signal-editor,.lab-principle) {
+  border-color:var(--cl-rule);
+  border-radius:4px;
+  box-shadow:none;
+}
+body.cl-notebook:not(.cl-preview) main :is(.lab-card-preview,.lab-primary-plot .lab-plot) {
+  background-color:var(--cl-paper);
+  background-image:var(--cl-grid-lines);
+  background-size:40px 40px,40px 40px,8px 8px,8px 8px;
+}
+body.cl-notebook:not(.cl-preview) main :is(.lab-note,.objective-note,.diagnosis-panel) {
+  color:var(--cl-ink-2);
+  background:var(--cl-sheet);
+  border-color:var(--cl-rule);
+  border-left:3px solid var(--cl-ink);
+  border-radius:0;
+}
+body.cl-notebook :is(.waveform-workbench,.photo-waveform) :is(input,select,textarea) {
+  border-radius:4px;
+}
+
+/* Review, wrong answers and backups use the prototype's margin-note rules. */
+body.cl-notebook main :is(.review-grid > .card,.about-content > .card) {
+  min-width:0;
+  border-top:2px solid var(--cl-ink);
+}
+body.cl-notebook .review-item {min-height:44px}
+body.cl-notebook .results-grid .card strong {
+  color:var(--cl-ink);
+  font-family:var(--cl-num);
+  font-weight:400;
+}
+
+@media (max-width:760px) {
+  body.cl-notebook:not(.cl-preview) .page-heading {padding-bottom:12px}
+  body.cl-notebook:not(.cl-preview) .page-heading h1 {font-size:32px}
+  body.cl-notebook .topic-list .topic-row {gap:10px}
+  body.cl-notebook .topic-info {min-width:0}
+  body.cl-notebook .topic-state {flex:none}
+  body.cl-notebook .hero h2 {font-size:24px}
+  body.cl-notebook .hero-wave {
+    top:auto;
+    right:0;
+    bottom:0;
+    width:38%;
+    height:88px;
+    opacity:.22;
+    border:0;
+  }
+  body.cl-notebook .lab-page .page-heading h1 {font-size:26px}
+  body.cl-notebook .lab-page .page-heading {padding-bottom:8px}
+  body.cl-notebook main:is([data-notebook-page=diagnostics],[data-notebook-page=review]) > .page-heading {
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  body.cl-notebook main:is([data-notebook-page=diagnostics],[data-notebook-page=review]) > .page-heading > div {
+    flex:1 0 100%;
+  }
+}
